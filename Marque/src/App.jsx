@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import Navigation from './components/Navigation'
+import Sidebar from './components/Navigation'
 import Login from './pages/Login'
-import Home from './pages/Home'
-import About from './pages/About'
-import Contact from './pages/Contact'
+import Dashboard from './pages/Dashboard'
+import Students from './pages/Students'
+import Organizations from './pages/Organizations'
+import Events from './pages/Events'
 import './styles/App.css'
 
 function App() {
@@ -18,23 +19,22 @@ function App() {
     setIsAuthenticated(false)
   }
 
-  // Show login screen if not authenticated
   if (!isAuthenticated) {
     return <Login onLogin={handleLogin} />
   }
 
-  // Show main app with navigation after login
   return (
     <Router>
-      <div className="min-h-screen bg-gray-900 text-white">
-        <Navigation onLogout={handleLogout} />
-        <div className="pt-16"> {/* Padding to account for fixed navbar */}
+      <div className="flex min-h-screen bg-background">
+        <Sidebar onLogout={handleLogout} />
+        <main className="ml-64 flex-1 min-h-screen overflow-y-auto">
           <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/students" element={<Students />} />
+            <Route path="/organizations" element={<Organizations />} />
+            <Route path="/events" element={<Events />} />
           </Routes>
-        </div>
+        </main>
       </div>
     </Router>
   )

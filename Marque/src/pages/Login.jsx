@@ -8,8 +8,7 @@ function Login({ onLogin }) {
 
     const handleSubmit = (e) => {
         e.preventDefault()
-        // TODO: Add your backend authentication logic here
-        console.log('Login form submitted:', formData)
+        onLogin()
     }
 
     const handleChange = (e) => {
