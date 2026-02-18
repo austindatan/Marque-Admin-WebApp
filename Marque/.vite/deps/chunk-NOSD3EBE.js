@@ -1,7 +1,7 @@
 import {
   __commonJS,
   require_react
-} from "./chunk-YSCK7JR7.js";
+} from "./chunk-G4V7ITBN.js";
 
 // node_modules/react-dom/cjs/react-dom.development.js
 var require_react_dom_development = __commonJS({
@@ -250,6 +250,7 @@ var require_react_dom_development = __commonJS({
 // node_modules/react-dom/index.js
 var require_react_dom = __commonJS({
   "node_modules/react-dom/index.js"(exports, module) {
+    "use strict";
     if (false) {
       checkDCE();
       module.exports = null;
@@ -262,4 +263,4 @@ var require_react_dom = __commonJS({
 export {
   require_react_dom
 };
-//# sourceMappingURL=chunk-KE4X4T4N.js.map
+//# sourceMappingURL=chunk-NOSD3EBE.js.map
