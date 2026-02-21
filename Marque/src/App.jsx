@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import Students from './pages/Students'
 import Organizations from './pages/Organizations'
 import Events from './pages/Events'
+import EventMonitoring from './pages/EventMonitoring'
 import './styles/App.css'
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
             <Route path="/students" element={<Students />} />
             <Route path="/organizations" element={<Organizations />} />
             <Route path="/events" element={<Events />} />
+            <Route path="/events/monitoring/:id" element={<EventMonitoring />} />
           </Routes>
         </main>
       </div>
