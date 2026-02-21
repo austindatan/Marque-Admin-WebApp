@@ -1,10 +1,11 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
-const mockEvents = [
+export const mockEvents = [
     {
         id: 1,
         name: 'Light of First Dawn',
@@ -90,6 +91,7 @@ const statusStyles = {
 }
 
 function Events() {
+    const navigate = useNavigate()
     const [search, setSearch] = useState('')
     const [filter, setFilter] = useState('All')
 
@@ -203,7 +205,12 @@ function Events() {
                             </div>
 
                             <div className="flex gap-2 pt-1">
-                                <Button variant="outline" size="sm" className="flex-1 h-8 text-xs gap-1.5">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex-1 h-8 text-xs gap-1.5"
+                                    onClick={() => navigate(`/events/monitoring/${event.id}`)}
+                                >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
