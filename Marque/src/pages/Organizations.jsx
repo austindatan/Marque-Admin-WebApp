@@ -12,6 +12,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
+import OrganizationForms from './forms/OrganizationForms'
 
 const mockOrgs = [
     { id: 1, name: 'Computer Science Society', acronym: 'CSS', type: 'Academic', members: 142, president: 'Carlos Mendoza', status: 'Active', logo: null },
@@ -64,6 +65,7 @@ function getInitials(name) {
 
 function Organizations() {
     const [search, setSearch] = useState('')
+    const [isAddOpen, setIsAddOpen] = useState(false)
 
     const filtered = mockOrgs.filter(o =>
         o.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -78,7 +80,7 @@ function Organizations() {
                     <h1 className="text-3xl font-extrabold text-primary tracking-tight">Organizations</h1>
                     <p className="text-muted-foreground mt-1 text-sm">Manage all student organizations and their details.</p>
                 </div>
-                <Button className="gap-2">
+                <Button className="gap-2" onClick={() => setIsAddOpen(true)}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
@@ -184,6 +186,14 @@ function Organizations() {
                     </Table>
                 </CardContent>
             </Card>
+
+            <OrganizationForms
+                open={isAddOpen}
+                onOpenChange={setIsAddOpen}
+                onSubmit={(data) => {
+                    console.log('New organization data:', data)
+                }}
+            />
         </div>
     )
 }
