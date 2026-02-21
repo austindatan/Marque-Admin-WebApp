@@ -7,6 +7,7 @@ import Students from './pages/Students'
 import Organizations from './pages/Organizations'
 import Events from './pages/Events'
 import StudentForms from './pages/forms/StudentForms'
+import EventMonitoring from './pages/EventMonitoring'
 import './styles/App.css'
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
             <Route path="/organizations" element={<Organizations />} />
             <Route path="/events" element={<Events />} />
             <Route path="/student_forms" element={<StudentForms />} />
+            <Route path="/events/monitoring/:id" element={<EventMonitoring />} />
           </Routes>
         </main>
       </div>
