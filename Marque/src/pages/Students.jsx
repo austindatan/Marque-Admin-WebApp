@@ -12,6 +12,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
+import StudentForms from '@/pages/forms/StudentForms'
 
 const mockStudents = [
     { id: '2021-00001', name: 'Maria Santos', course: 'BS Computer Science', year: '3rd Year', org: 'CSS', status: 'Active' },
@@ -46,12 +47,19 @@ function getInitials(name) {
 
 function Students() {
     const [search, setSearch] = useState('')
+    // ── Dialog open/close state lives here in the parent ──
+    const [isFormOpen, setIsFormOpen] = useState(false)
 
     const filtered = mockStudents.filter(s =>
         s.name.toLowerCase().includes(search.toLowerCase()) ||
         s.id.includes(search) ||
         s.course.toLowerCase().includes(search.toLowerCase())
     )
+
+    function handleAddStudent(values) {
+        // TODO: wire up to your API / state management
+        console.log('New student submitted:', values)
+    }
 
     return (
         <div className="p-8 space-y-6">
@@ -60,13 +68,22 @@ function Students() {
                     <h1 className="text-3xl font-extrabold text-primary tracking-tight">Students</h1>
                     <p className="text-muted-foreground mt-1 text-sm">Manage and view all registered students.</p>
                 </div>
-                <Button className="gap-2">
+
+                {/* ── Trigger: opens the StudentForms dialog ── */}
+                <Button className="gap-2" onClick={() => setIsFormOpen(true)}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
                     Add Student
                 </Button>
             </div>
+
+            {/* ── StudentForms Dialog (controlled by parent state) ── */}
+            <StudentForms
+                open={isFormOpen}
+                onOpenChange={setIsFormOpen}
+                onSubmit={handleAddStudent}
+            />
 
             <Card className="shadow-sm">
                 <CardHeader className="pb-4">
