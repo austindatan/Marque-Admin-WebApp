@@ -6,9 +6,31 @@ function Login({ onLogin }) {
         password: ''
     })
 
-    const handleSubmit = (e) => {
+    // ✅ Updated handleSubmit to connect to backend
+    const handleSubmit = async (e) => {
         e.preventDefault()
-        onLogin()
+
+        try {
+            const res = await fetch("http://localhost:5000/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(formData),
+            })
+
+            const data = await res.json()
+            console.log(data)
+
+            if (data.message === "Login successful") {
+                if (onLogin) onLogin(data.user) // send user data to parent if needed
+            } else {
+                console.log(data.message) // just log error instead of popup
+            }
+        } catch (err) {
+            console.error(err)
+            alert("Something went wrong. Try again.")
+        }
     }
 
     const handleChange = (e) => {
@@ -39,7 +61,7 @@ function Login({ onLogin }) {
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div>
                             <input
-                                type="email"
+                                type="text"
                                 id="email"
                                 name="email"
                                 value={formData.email}
