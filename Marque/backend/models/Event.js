@@ -1,19 +1,32 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
-const EventSchema = new mongoose.Schema({
-    event_name: { type: String, required: true },  // renamed from title
-    event_type: { type: String },
-    description: { type: String },
-    event_image: { type: String },
-    event_date: { type: Date },
-    start_time: { type: Date },
-    end_time: { type: Date },
-    venue: { type: String },
-    venue_details: { type: String },
-    status: { type: String, default: "Pending" }, // Pending / Concluded / Upcoming
-    is_mandatory: { type: Boolean, default: false },
-    remindersSent: { type: Object, default: {} },
-    createdAt: { type: Date, default: Date.now }
-});
+const eventSchema = new mongoose.Schema(
+    {
+        organization_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Organization',
+            required: true,
+        },
+        event_name: { type: String, required: true },
+        event_type: { type: String, enum: ["Event", "Sub-Event"] },
+        description: { type: String, required: true },
+        event_image: { type: String }, // can be URL or file path
+        event_date: { type: Date, required: true },
+        end_date: { type: Date, required: true },
+        start_time: { type: Date, required: true }, // includes time
+        end_time: { type: Date, required: true },   // includes time
+        venue: { type: String, required: true },
+        venue_details: { type: String }, // new field for additional venue info
+        status: { type: String, enum: ["Upcoming", "Ongoing", "Concluded", "Cancelled"], default: 'Upcoming' },
+        is_mandatory: { type: Boolean, default: false },
+        remindersSent: {
+            twentyFourHours: { type: Boolean, default: false },
+            oneHour: { type: Boolean, default: false },
+            conclusion: { type: Boolean, default: false }
+        }
+    },
+);
 
-module.exports = mongoose.model("Event", EventSchema);
+const Event = mongoose.model('Event', eventSchema);
+
+module.exports = Event;

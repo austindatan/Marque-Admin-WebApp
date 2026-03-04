@@ -5,31 +5,33 @@ function Login({ onLogin }) {
         email: '',
         password: ''
     })
+    const [error, setError] = useState('')
+    const [loading, setLoading] = useState(false)
 
-    // ✅ Updated handleSubmit to connect to backend
     const handleSubmit = async (e) => {
         e.preventDefault()
+        setError('')
+        setLoading(true)
 
         try {
             const res = await fetch("http://localhost:5000/login", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData),
             })
 
             const data = await res.json()
-            console.log(data)
 
-            if (data.message === "Login successful") {
-                if (onLogin) onLogin(data.user) // send user data to parent if needed
+            if (res.ok && data.message === "Login successful") {
+                if (onLogin) onLogin(data.user)
             } else {
-                console.log(data.message) // just log error instead of popup
+                setError(data.message || 'Invalid credentials. Please try again.')
             }
         } catch (err) {
             console.error(err)
-            alert("Something went wrong. Try again.")
+            setError('Could not connect to the server. Please try again.')
+        } finally {
+            setLoading(false)
         }
     }
 
@@ -85,24 +87,28 @@ function Login({ onLogin }) {
                             />
                         </div>
 
-                        <div className="flex items-center justify-between">
-                            <label className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                />
-                                <span className="ml-2 text-sm text-gray-600">Remember me</span>
-                            </label>
-                            <a href="#" className="text-sm text-[#FECB20] hover:text-[#FECB20]/50 font-medium">
-                                Forgot password?
-                            </a>
-                        </div>
+                        {/* Error message */}
+                        {error && (
+                            <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                                </svg>
+                                <span>{error}</span>
+                            </div>
+                        )}
 
                         <button
                             type="submit"
-                            className="w-full py-3 px-4 bg-[#0A0F51] hover:bg-[#0A0F51]/50 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+                            disabled={loading}
+                            className="w-full py-3 px-4 bg-[#0A0F51] hover:bg-[#0A0F51]/80 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2"
                         >
-                            Sign In
+                            {loading && (
+                                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                                </svg>
+                            )}
+                            {loading ? 'Signing in...' : 'Sign In'}
                         </button>
                     </form>
 
