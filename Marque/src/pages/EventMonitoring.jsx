@@ -4,7 +4,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { mockEvents } from './Events'
 import {
     Table,
     TableHeader,
@@ -27,26 +26,37 @@ export default function EventMonitoring() {
     const { id } = useParams()
     const navigate = useNavigate()
 
-    const [selectedEventId, setSelectedEventId] = useState(Number(id) || 1)
+    const [selectedEventId, setSelectedEventId] = useState(id || '')
+    const [events, setEvents] = useState([])
     const [search, setSearch] = useState('')
     const [filterProgram, setFilterProgram] = useState('All')
     const [filterYear, setFilterYear] = useState('All')
     const [filterStatus, setFilterStatus] = useState('All')
 
-    const currentEvent = mockEvents.find(e => e.id === selectedEventId) || mockEvents[0]
+    // Fetch all events for the dropdown
+    useEffect(() => {
+        fetch('http://localhost:5000/events')
+            .then(res => res.json())
+            .then(data => {
+                setEvents(data)
+                // If no id in URL, default to first event
+                if (!id && data.length > 0) setSelectedEventId(data[0]._id)
+            })
+            .catch(err => console.error('Failed to fetch events:', err))
+    }, [])
+
+    const currentEvent = events.find(e => e._id === selectedEventId) || events[0] || {}
 
     // Sync URL when dropdown changes
     const handleEventChange = (e) => {
-        const newId = Number(e.target.value)
+        const newId = e.target.value
         setSelectedEventId(newId)
         navigate(`/events/monitoring/${newId}`)
     }
 
     // Update selectedEventId if URL changes directly
     useEffect(() => {
-        if (id) {
-            setSelectedEventId(Number(id))
-        }
+        if (id) setSelectedEventId(id)
     }, [id])
 
     const filteredAttendance = mockAttendanceList.filter(student => {
@@ -58,7 +68,7 @@ export default function EventMonitoring() {
     })
 
     // Mock computed metrics
-    const totalExpected = currentEvent.participants || 200
+    const totalExpected = 200
     const checkedIn = mockAttendanceList.length
     const attendancePercentage = ((checkedIn / totalExpected) * 100).toFixed(1)
 
@@ -85,8 +95,8 @@ export default function EventMonitoring() {
                         value={selectedEventId}
                         onChange={handleEventChange}
                     >
-                        {mockEvents.map(event => (
-                            <option key={event.id} value={event.id}>{event.name}</option>
+                        {events.map(event => (
+                            <option key={event._id} value={event._id}>{event.event_name}</option>
                         ))}
                     </select>
                 </div>

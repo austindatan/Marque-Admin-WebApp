@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
     Table,
     TableBody,
@@ -14,62 +15,210 @@ import {
 } from '@/components/ui/table'
 import StudentForms from '@/pages/forms/StudentForms'
 
-const mockStudents = [
-    { id: '2021-00001', name: 'Maria Santos', course: 'BS Computer Science', year: '3rd Year', org: 'CSS', status: 'Active' },
-    { id: '2021-00042', name: 'Juan dela Cruz', course: 'BS Information Technology', year: '2nd Year', org: 'ITSOC', status: 'Active' },
-    { id: '2022-00118', name: 'Ana Reyes', course: 'BS Computer Engineering', year: '2nd Year', org: 'IEEE', status: 'Active' },
-    { id: '2020-00305', name: 'Carlos Mendoza', course: 'BS Computer Science', year: '4th Year', org: 'CSS', status: 'Inactive' },
-    { id: '2023-00021', name: 'Sofia Garcia', course: 'BS Information Systems', year: '1st Year', org: '—', status: 'Active' },
-    { id: '2022-00089', name: 'Miguel Torres', course: 'BS Computer Science', year: '3rd Year', org: 'ACM', status: 'Active' },
-    { id: '2021-00200', name: 'Isabella Lim', course: 'BS Information Technology', year: '3rd Year', org: 'ITSOC', status: 'Inactive' },
-]
-
-// Generate a consistent color from a name string
+// ── Avatar helpers ──────────────────────────────────────────────────────────
 const avatarColors = [
-    ['#dbeafe', '#1d4ed8'], // blue
-    ['#ede9fe', '#6d28d9'], // purple
-    ['#dcfce7', '#15803d'], // green
-    ['#fef9c3', '#a16207'], // yellow
-    ['#fee2e2', '#b91c1c'], // red
-    ['#e0f2fe', '#0369a1'], // sky
-    ['#fce7f3', '#be185d'], // pink
+    ['#dbeafe', '#1d4ed8'],
+    ['#ede9fe', '#6d28d9'],
+    ['#dcfce7', '#15803d'],
+    ['#fef9c3', '#a16207'],
+    ['#fee2e2', '#b91c1c'],
+    ['#e0f2fe', '#0369a1'],
+    ['#fce7f3', '#be185d'],
 ]
 
-function getAvatarColor(name) {
+function getAvatarColor(name = '') {
     let hash = 0
     for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
     return avatarColors[Math.abs(hash) % avatarColors.length]
 }
 
-function getInitials(name) {
-    return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
+function getInitials(name = '') {
+    return name.split(' ').map(n => n[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()
 }
 
-function Students() {
-    const [search, setSearch] = useState('')
-    // ── Dialog open/close state lives here in the parent ──
-    const [isFormOpen, setIsFormOpen] = useState(false)
+function getOrgAcronym(name = '') {
+    return name
+        .split(' ')
+        .filter(w => w.length > 2)
+        .map(w => w[0])
+        .slice(0, 3)
+        .join('')
+        .toUpperCase() || name.slice(0, 3).toUpperCase()
+}
 
-    const filtered = mockStudents.filter(s =>
-        s.name.toLowerCase().includes(search.toLowerCase()) ||
-        s.id.includes(search) ||
-        s.course.toLowerCase().includes(search.toLowerCase())
+function getFullName(user) {
+    if (!user) return '—'
+    return [user.firstname, user.middlename, user.lastname].filter(Boolean).join(' ')
+}
+
+const ROLE_FILTERS = ['All', 'With Role', 'No Role']
+
+const roleBadgeStyle = {
+    President: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+    Manager: 'bg-blue-100 text-blue-800 border-blue-300',
+    Committee: 'bg-purple-100 text-purple-800 border-purple-300',
+}
+
+const orgChipColors = [
+    ['#dbeafe', '#1d4ed8'],
+    ['#ede9fe', '#6d28d9'],
+    ['#dcfce7', '#15803d'],
+    ['#fef9c3', '#a16207'],
+    ['#fee2e2', '#b91c1c'],
+    ['#e0f2fe', '#0369a1'],
+    ['#fce7f3', '#be185d'],
+]
+
+function getOrgColor(name = '') {
+    let hash = 0
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
+    return orgChipColors[Math.abs(hash) % orgChipColors.length]
+}
+
+// ── Org Chips — compact display for multiple orgs ──────────────────────────
+// Shows up to 2 chips inline; overflows collapse into a "+N more" indicator
+function OrgChips({ orgs = [] }) {
+    const [expanded, setExpanded] = useState(false)
+
+    if (orgs.length === 0) return <span className="text-xs text-muted-foreground">—</span>
+
+    const visible = expanded ? orgs : orgs.slice(0, 2)
+    const overflow = orgs.length - 2
+
+    return (
+        <div className="flex flex-col gap-1.5">
+            {visible.map((o, i) => {
+                const [bg, fg] = getOrgColor(o.org_name)
+                const acronym = getOrgAcronym(o.org_name)
+                return (
+                    <div key={i} className="flex items-center gap-1.5 min-w-0">
+                        {/* Org avatar */}
+                        <div
+                            className="h-5 w-5 rounded-md shrink-0 flex items-center justify-center text-[8px] font-extrabold"
+                            style={{ backgroundColor: o.pfp ? 'transparent' : bg, color: fg }}
+                        >
+                            {o.pfp
+                                ? <img src={o.pfp} alt={o.org_name} className="h-5 w-5 rounded-md object-cover" />
+                                : acronym
+                            }
+                        </div>
+                        {/* Org name */}
+                        <span className="text-xs font-medium truncate max-w-[110px]" title={o.org_name}>
+                            {o.org_name}
+                        </span>
+                        {/* Role badge */}
+                        <Badge
+                            variant="outline"
+                            className={`text-[9px] font-bold px-1.5 py-0 border shrink-0 ${roleBadgeStyle[o.role] ?? 'bg-gray-100 text-gray-600'}`}
+                        >
+                            {o.role}
+                        </Badge>
+                    </div>
+                )
+            })}
+
+            {/* Overflow toggle */}
+            {!expanded && overflow > 0 && (
+                <button
+                    onClick={() => setExpanded(true)}
+                    className="text-[10px] text-primary font-semibold hover:underline text-left"
+                >
+                    +{overflow} more
+                </button>
+            )}
+            {expanded && orgs.length > 2 && (
+                <button
+                    onClick={() => setExpanded(false)}
+                    className="text-[10px] text-muted-foreground hover:underline text-left"
+                >
+                    Show less
+                </button>
+            )}
+        </div>
     )
+}
+
+// ── Component ───────────────────────────────────────────────────────────────
+function Students() {
+    const [isFormOpen, setIsFormOpen] = useState(false)
+    const [search, setSearch] = useState('')
+    const [roleFilter, setRoleFilter] = useState('All')
+    const [collegeFilter, setCollegeFilter] = useState('')
+    const [departmentFilter, setDepartmentFilter] = useState('')
+
+    const [students, setStudents] = useState([])
+    const [colleges, setColleges] = useState([])
+    const [departments, setDepartments] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState(null)
+
+    // ── Fetch students ──────────────────────────────────────────────────────
+    useEffect(() => {
+        fetch('http://localhost:5000/students')
+            .then(r => { if (!r.ok) throw new Error(); return r.json() })
+            .then(data => { setStudents(data); setLoading(false) })
+            .catch(() => { setError('Could not load students. Is the backend running?'); setLoading(false) })
+    }, [])
+
+    // ── Fetch colleges ──────────────────────────────────────────────────────
+    useEffect(() => {
+        fetch('http://localhost:5000/colleges')
+            .then(r => r.json())
+            .then(setColleges)
+            .catch(() => { })
+    }, [])
+
+    // ── Fetch departments when college changes ──────────────────────────────
+    useEffect(() => {
+        setDepartmentFilter('')
+        const url = collegeFilter
+            ? `http://localhost:5000/departments?college_id=${collegeFilter}`
+            : 'http://localhost:5000/departments'
+        fetch(url)
+            .then(r => r.json())
+            .then(setDepartments)
+            .catch(() => { })
+    }, [collegeFilter])
+
+    // ── Filtering ───────────────────────────────────────────────────────────
+    const filtered = students.filter(s => {
+        const name = getFullName(s.users_id)
+        const email = s.users_id?.email ?? ''
+        const sn = s.student_number ?? ''
+        const dept = s.department_id?.department_name ?? ''
+        const deptId = s.department_id?._id ?? ''
+        const collegeId = s.college_id?._id ?? ''
+
+        const matchSearch = (
+            name.toLowerCase().includes(search.toLowerCase()) ||
+            email.toLowerCase().includes(search.toLowerCase()) ||
+            sn.includes(search) ||
+            dept.toLowerCase().includes(search.toLowerCase())
+        )
+        const matchRole = (
+            roleFilter === 'All' ||
+            (roleFilter === 'With Role' && s.hasRole) ||
+            (roleFilter === 'No Role' && !s.hasRole)
+        )
+        const matchCollege = !collegeFilter || collegeId === collegeFilter
+        const matchDepartment = !departmentFilter || deptId === departmentFilter
+
+        return matchSearch && matchRole && matchCollege && matchDepartment
+    })
 
     function handleAddStudent(values) {
-        // TODO: wire up to your API / state management
         console.log('New student submitted:', values)
     }
 
     return (
         <div className="p-8 space-y-6">
+
+            {/* ── Header ── */}
             <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
                     <h1 className="text-3xl font-extrabold text-primary tracking-tight">Students</h1>
                     <p className="text-muted-foreground mt-1 text-sm">Manage and view all registered students.</p>
                 </div>
-
-                {/* ── Trigger: opens the StudentForms dialog ── */}
                 <Button className="gap-2" onClick={() => setIsFormOpen(true)}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -78,94 +227,230 @@ function Students() {
                 </Button>
             </div>
 
-            {/* ── StudentForms Dialog (controlled by parent state) ── */}
-            <StudentForms
-                open={isFormOpen}
-                onOpenChange={setIsFormOpen}
-                onSubmit={handleAddStudent}
-            />
+            <StudentForms open={isFormOpen} onOpenChange={setIsFormOpen} onSubmit={handleAddStudent} />
 
-            <Card className="shadow-sm">
-                <CardHeader className="pb-4">
-                    <div className="flex items-center justify-between gap-4 flex-wrap">
-                        <CardTitle className="text-sm font-semibold text-muted-foreground">
-                            {filtered.length} record{filtered.length !== 1 ? 's' : ''}
-                        </CardTitle>
-                        <div className="relative w-64">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                            <Input
-                                placeholder="Search students..."
-                                value={search}
-                                onChange={e => setSearch(e.target.value)}
-                                className="pl-9"
-                            />
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Student ID</TableHead>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Course</TableHead>
-                                <TableHead>Year</TableHead>
-                                <TableHead>Organization</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filtered.map(student => {
-                                const [bg, fg] = getAvatarColor(student.name)
-                                return (
-                                    <TableRow key={student.id}>
-                                        <TableCell className="font-mono text-xs text-muted-foreground">{student.id}</TableCell>
+            {/* ── Filter Bar ── */}
+            <div className="flex flex-wrap items-center gap-3">
+
+                {/* Role pill filter */}
+                <div className="flex items-center gap-1 bg-muted p-1 rounded-xl">
+                    {ROLE_FILTERS.map(f => (
+                        <button
+                            key={f}
+                            onClick={() => setRoleFilter(f)}
+                            className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-150 ${roleFilter === f
+                                ? 'bg-white text-primary shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                        >
+                            {f}
+                        </button>
+                    ))}
+                </div>
+
+                {/* College dropdown */}
+                <select
+                    value={collegeFilter}
+                    onChange={e => setCollegeFilter(e.target.value)}
+                    className="text-sm border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20 bg-background"
+                >
+                    <option value="">All Colleges</option>
+                    {colleges.map(c => (
+                        <option key={c._id} value={c._id}>{c.college_name}</option>
+                    ))}
+                </select>
+
+                {/* Department dropdown — narrows when college is selected */}
+                <select
+                    value={departmentFilter}
+                    onChange={e => setDepartmentFilter(e.target.value)}
+                    className="text-sm border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20 bg-background"
+                >
+                    <option value="">All Departments</option>
+                    {departments.map(d => (
+                        <option key={d._id} value={d._id}>{d.department_name}</option>
+                    ))}
+                </select>
+
+                {/* Search */}
+                <div className="relative ml-auto w-64">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <Input
+                        placeholder="Search name, email, ID..."
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        className="pl-9"
+                    />
+                </div>
+            </div>
+
+            {/* Loading skeleton */}
+            {loading && (
+                <Card className="shadow-sm">
+                    <CardContent className="p-0">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    {['Stu ID', 'Name', 'Email', 'Department', 'College', 'Organizations', 'Actions'].map(h => (
+                                        <TableHead key={h}>{h}</TableHead>
+                                    ))}
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {Array.from({ length: 8 }).map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell><Skeleton className="h-3 w-20" /></TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-3">
-                                                <Avatar className="h-8 w-8 rounded-full shrink-0">
-                                                    <AvatarFallback
-                                                        className="rounded-full text-xs font-bold"
-                                                        style={{ backgroundColor: bg, color: fg }}
-                                                    >
-                                                        {getInitials(student.name)}
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                                <span className="font-semibold">{student.name}</span>
+                                                <Skeleton className="h-8 w-8 rounded-full" />
+                                                <Skeleton className="h-4 w-28" />
                                             </div>
                                         </TableCell>
-                                        <TableCell>{student.course}</TableCell>
-                                        <TableCell>{student.year}</TableCell>
-                                        <TableCell>{student.org}</TableCell>
+                                        <TableCell><Skeleton className="h-3 w-36" /></TableCell>
+                                        <TableCell><Skeleton className="h-3 w-24" /></TableCell>
+                                        <TableCell><Skeleton className="h-3 w-20" /></TableCell>
                                         <TableCell>
-                                            <Badge variant={student.status === 'Active' ? 'default' : 'secondary'}>
-                                                {student.status}
-                                            </Badge>
+                                            <div className="space-y-1.5">
+                                                <div className="flex items-center gap-2">
+                                                    <Skeleton className="h-5 w-5 rounded-md" />
+                                                    <Skeleton className="h-3 w-24" />
+                                                    <Skeleton className="h-4 w-14 rounded-full" />
+                                                </div>
+                                            </div>
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                    </svg>
-                                                </Button>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                    </svg>
-                                                </Button>
+                                                <Skeleton className="h-8 w-8 rounded-md" />
+                                                <Skeleton className="h-8 w-8 rounded-md" />
                                             </div>
                                         </TableCell>
                                     </TableRow>
-                                )
-                            })}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* ── Error ── */}
+            {error && !loading && (
+                <div className="text-center py-20 text-red-500">
+                    <p className="text-4xl mb-3">⚠️</p>
+                    <p className="font-semibold">{error}</p>
+                </div>
+            )}
+
+            {/* ── Table ── */}
+            {!loading && !error && (
+                <Card className="shadow-sm">
+                    <CardHeader className="pb-4">
+                        <CardTitle className="text-sm font-semibold text-muted-foreground">
+                            {filtered.length} record{filtered.length !== 1 ? 's' : ''}
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Stu ID</TableHead>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead>Email</TableHead>
+                                    <TableHead>Department</TableHead>
+                                    <TableHead>College</TableHead>
+                                    <TableHead>Organizations</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {filtered.length > 0 ? filtered.map(student => {
+                                    const name = getFullName(student.users_id)
+                                    const [bg, fg] = getAvatarColor(name)
+                                    const dept = student.department_id?.department_name ?? '—'
+                                    const deptCode = student.department_id?.department_code ?? ''
+                                    const college = student.college_id?.college_name ?? '—'
+                                    const collegeCode = student.college_id?.college_code ?? ''
+
+                                    return (
+                                        <TableRow key={student._id} className="align-top">
+
+                                            {/* Student ID */}
+                                            <TableCell className="font-mono text-xs text-muted-foreground pt-4">
+                                                {student.student_number ?? '—'}
+                                            </TableCell>
+
+                                            {/* Name + avatar */}
+                                            <TableCell className="pt-3">
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar className="h-8 w-8 rounded-full shrink-0">
+                                                        {student.users_id?.profile_image ? (
+                                                            <img src={student.users_id.profile_image} alt={name} className="h-full w-full rounded-full object-cover" />
+                                                        ) : (
+                                                            <AvatarFallback
+                                                                className="rounded-full text-xs font-bold"
+                                                                style={{ backgroundColor: bg, color: fg }}
+                                                            >
+                                                                {getInitials(name)}
+                                                            </AvatarFallback>
+                                                        )}
+                                                    </Avatar>
+                                                    <span className="font-semibold text-sm">{name}</span>
+                                                </div>
+                                            </TableCell>
+
+                                            {/* Email */}
+                                            <TableCell className="text-xs text-muted-foreground pt-4">
+                                                {student.users_id?.email ?? '—'}
+                                            </TableCell>
+
+                                            {/* Department */}
+                                            <TableCell className="pt-4">
+                                                <span className="text-sm">{dept}</span>
+                                                {deptCode && <span className="ml-1 text-[10px] font-mono text-muted-foreground">({deptCode})</span>}
+                                            </TableCell>
+
+                                            {/* College */}
+                                            <TableCell className="pt-4">
+                                                <span className="text-sm">{college}</span>
+                                                {collegeCode && <span className="ml-1 text-[10px] font-mono text-muted-foreground">({collegeCode})</span>}
+                                            </TableCell>
+
+                                            {/* Organizations — multi-org chips */}
+                                            <TableCell className="pt-3">
+                                                <OrgChips orgs={student.orgs} />
+                                            </TableCell>
+
+                                            {/* Actions */}
+                                            <TableCell className="text-right pt-3">
+                                                <div className="flex justify-end gap-2">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                        </svg>
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                        </svg>
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    )
+                                }) : (
+                                    <TableRow>
+                                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                                            No students match the current filters.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            )}
         </div>
     )
 }

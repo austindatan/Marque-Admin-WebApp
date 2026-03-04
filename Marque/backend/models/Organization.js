@@ -1,10 +1,24 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
-const OrganizationSchema = new mongoose.Schema({
-    name: { type: String, required: true },
-    category: { type: String },
-    status: { type: String, default: "Pending" }, // Pending / Approved
-    createdAt: { type: Date, default: Date.now }
-});
+const OrganizationSchema = new mongoose.Schema(
+    {
+        department_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Department',
+            required: true,
+        },
+        org_name: { type: String, required: true },
+        org_type: { type: String, enum: ["Unit Organization", "Mother Organization", "FAESO Organization"], required: true },
+        description: { type: String, required: true },
+        pfp: { type: String },
+        cover_photo: { type: String },
+        fb_link: { type: String },
+        ig_link: { type: String },
+        x_link: { type: String },
+        moderator_name: { type: String, required: true },
+    },
+);
 
-module.exports = mongoose.model("Organization", OrganizationSchema);
+const Organization = mongoose.model('Organization', OrganizationSchema);
+
+module.exports = Organization;
