@@ -111,14 +111,7 @@ function Login({ onLogin }) {
                         </button>
                     </form>
 
-                    <div className="mt-6">
-                        <p className="text-sm text-gray-600">
-                            Don't have an account?{' '}
-                            <a href="#" className="text-[#FECB20] hover:text-[#FECB20]/50 font-medium">
-                                Sign up
-                            </a>
-                        </p>
-                    </div>
+                    
                 </div>
 
                 <p className="text-xs text-gray-500 mt-8">
