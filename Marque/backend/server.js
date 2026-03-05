@@ -15,6 +15,7 @@ const Event = require("./models/Event");
 const College = require("./models/College");
 const Department = require("./models/Department");
 const OrgOfficer = require("./models/Org_officer");
+const attendanceRoutes = require("./routes/attendance");
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use("/attendance", attendanceRoutes);
 
 // ===== MONGODB CONNECTION =====
 mongoose.connect(process.env.MONGODB_URI)

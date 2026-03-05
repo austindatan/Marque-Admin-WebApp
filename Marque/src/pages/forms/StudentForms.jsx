@@ -28,7 +28,6 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 
-// ─── Zod Schema ────────────────────────────────────────────────────────────────
 const studentSchema = z.object({
     studentId: z.string({ required_error: 'Student ID is required.' }).min(1, 'Student ID is required.'),
     firstName: z.string({ required_error: 'First name is required.' }).min(1, 'First name is required.'),
@@ -51,7 +50,6 @@ const studentSchema = z.object({
     }).min(8, 'Password must be at least 8 characters.'),
 })
 
-// ─── Select Options ────────────────────────────────────────────────────────────
 const COLLEGE_OPTIONS = [
     'College of Engineering and Architecture',
     'College of Information Technology and Computing',
@@ -73,10 +71,8 @@ const YEAR_OPTIONS = ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year'
 const ORG_OPTIONS = ['CSS', 'ITSOC', 'IEEE', 'ACM', 'None']
 const ROLE_OPTIONS = ['President', 'Manager', 'Committee']
 
-// Renders a red asterisk for required field labels
 const Req = () => <span className="text-red-500 ml-0.5">*</span>
 
-// ─── Component ─────────────────────────────────────────────────────────────────
 function StudentForms({ open, onOpenChange, onSubmit }) {
     const form = useForm({
         resolver: zodResolver(studentSchema),
@@ -97,7 +93,6 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
         },
     })
 
-    // Reset every time the dialog closes (X button, backdrop click, or after submit)
     useEffect(() => {
         if (!open) form.reset()
     }, [open])
@@ -210,7 +205,7 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
                             )}
                         />
 
-                        {/* ── Department (full width) ── */}
+                        {/* ── Department  ── */}
                         <FormField
                             control={form.control}
                             name="department"
@@ -234,7 +229,7 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
                             )}
                         />
 
-                        {/* ── Selects: Year | Organization | Role ── */}
+                        {/* Selects: Year | Organization | Role */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <FormField
                                 control={form.control}
@@ -304,12 +299,11 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
                             />
                         </div>
 
-                        {/* ── Divider label ── */}
                         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest pt-1">
                             Account Details
                         </p>
 
-                        {/* ── Username | Email ── */}
+                        {/* Username | Email*/}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <FormField
                                 control={form.control}
@@ -339,7 +333,7 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
                             />
                         </div>
 
-                        {/* ── Contact Number | Password ── */}
+                        {/* Contact Number | Password */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <FormField
                                 control={form.control}
@@ -369,7 +363,7 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
                             />
                         </div>
 
-                        {/* ── Submit ── */}
+                        {/* Submit */}
                         <div className="pt-2">
                             <Button type="submit" className="w-full gap-2">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
