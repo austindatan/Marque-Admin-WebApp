@@ -57,11 +57,6 @@ export default function EventMonitoring() {
         fetchAttendance();
     }, [selectedEventId]);
 
-    const handleEventChange = (e) => {
-        const newId = e.target.value
-        setSelectedEventId(newId)
-        navigate(`/events/monitoring/${newId}`)
-    }
 
     const filteredAttendance = attendanceList.filter(item => {
         const matchSearch = item.name.toLowerCase().includes(search.toLowerCase()) || item.student_number.includes(search)
@@ -86,22 +81,11 @@ export default function EventMonitoring() {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3 bg-white p-2 border rounded-xl shadow-sm">
-                    <span className="text-sm font-semibold text-muted-foreground ml-2">Event:</span>
-                    <select
-                        className="bg-transparent border-none text-sm font-medium focus:ring-0 cursor-pointer min-w-[200px]"
-                        value={selectedEventId}
-                        onChange={handleEventChange}
-                    >
-                        {events.map(event => (
-                            <option key={event._id} value={event._id}>{event.event_name}</option>
-                        ))}
-                    </select>
-                </div>
+    
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
+                <div className="lg:col-span-3 space-y-6">
                     {/* Metrics */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Card className="shadow-sm border-l-4 border-l-primary">
