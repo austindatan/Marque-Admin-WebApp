@@ -15,7 +15,6 @@ import {
 } from '@/components/ui/table'
 import OrganizationForms from './forms/OrganizationForms'
 
-// ── Helpers ────────────────────────────────────────────────────────────────
 const orgColors = [
     ['#dbeafe', '#1d4ed8'],
     ['#ede9fe', '#6d28d9'],
@@ -32,7 +31,6 @@ function getOrgColor(name = '') {
     return orgColors[Math.abs(hash) % orgColors.length]
 }
 
-// Derive a short acronym from org name if none stored
 function getAcronym(name = '') {
     return name
         .split(' ')
@@ -51,7 +49,6 @@ const typeBadgeStyle = {
     'FAESO Organization': 'bg-amber-100 text-amber-800 border-amber-200',
 }
 
-// ── Component ──────────────────────────────────────────────────────────────
 function Organizations() {
     const [isAddOpen, setIsAddOpen] = useState(false)
     const [search, setSearch] = useState('')
@@ -63,7 +60,6 @@ function Organizations() {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
 
-    // ── Fetch organizations ────────────────────────────────────────────────
     useEffect(() => {
         fetch('http://localhost:5000/organizations')
             .then(r => { if (!r.ok) throw new Error(); return r.json() })
@@ -71,7 +67,6 @@ function Organizations() {
             .catch(() => { setError('Could not load organizations. Is the backend running?'); setLoading(false) })
     }, [])
 
-    // ── Fetch departments for filter dropdown ──────────────────────────────
     useEffect(() => {
         fetch('http://localhost:5000/departments')
             .then(r => r.json())
@@ -79,7 +74,6 @@ function Organizations() {
             .catch(() => { })
     }, [])
 
-    // ── Filtering ──────────────────────────────────────────────────────────
     const filtered = orgs.filter(o => {
         const name = o.org_name ?? ''
         const desc = o.description ?? ''
@@ -101,7 +95,6 @@ function Organizations() {
     return (
         <div className="p-8 space-y-6">
 
-            {/* ── Header ── */}
             <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
                     <h1 className="text-3xl font-extrabold text-primary tracking-tight">Organizations</h1>
@@ -115,10 +108,8 @@ function Organizations() {
                 </Button>
             </div>
 
-            {/* ── Filter Bar ── */}
             <div className="flex flex-wrap items-center gap-3">
 
-                {/* Org type pill filter */}
                 <div className="flex items-center gap-1 bg-muted p-1 rounded-xl">
                     {ORG_TYPES.map(t => (
                         <button
@@ -134,7 +125,6 @@ function Organizations() {
                     ))}
                 </div>
 
-                {/* Department dropdown */}
                 <select
                     value={departmentFilter}
                     onChange={e => setDepartmentFilter(e.target.value)}
@@ -148,7 +138,6 @@ function Organizations() {
                     ))}
                 </select>
 
-                {/* Search */}
                 <div className="relative ml-auto w-64">
                     <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -162,7 +151,6 @@ function Organizations() {
                 </div>
             </div>
 
-            {/* Loading skeleton */}
             {loading && (
                 <Card className="shadow-sm">
                     <CardContent className="p-0">
@@ -206,7 +194,6 @@ function Organizations() {
                 </Card>
             )}
 
-            {/* ── Error ── */}
             {error && !loading && (
                 <div className="text-center py-20 text-red-500">
                     <p className="text-4xl mb-3">⚠️</p>
@@ -214,7 +201,6 @@ function Organizations() {
                 </div>
             )}
 
-            {/* ── Table ── */}
             {!loading && !error && (
                 <Card className="shadow-sm">
                     <CardHeader className="pb-4">
@@ -243,8 +229,6 @@ function Organizations() {
 
                                     return (
                                         <TableRow key={org._id}>
-
-                                            {/* Organization name + logo */}
                                             <TableCell>
                                                 <div className="flex items-center gap-3">
                                                     <Avatar className="h-9 w-9 rounded-xl shrink-0">
@@ -268,7 +252,6 @@ function Organizations() {
                                                 </div>
                                             </TableCell>
 
-                                            {/* Type badge */}
                                             <TableCell>
                                                 <Badge
                                                     variant="outline"
@@ -278,7 +261,6 @@ function Organizations() {
                                                 </Badge>
                                             </TableCell>
 
-                                            {/* Department */}
                                             <TableCell>
                                                 <p className="text-sm">{dept}</p>
                                                 {deptCode && (
@@ -286,14 +268,12 @@ function Organizations() {
                                                 )}
                                             </TableCell>
 
-                                            {/* Description — truncated */}
                                             <TableCell className="max-w-xs">
                                                 <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                                                     {org.description ?? '—'}
                                                 </p>
                                             </TableCell>
 
-                                            {/* Actions */}
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-2">
                                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50">
@@ -323,14 +303,15 @@ function Organizations() {
                         </Table>
                     </CardContent>
                 </Card>
-            )}
+            )
+            }
 
             <OrganizationForms
                 open={isAddOpen}
                 onOpenChange={setIsAddOpen}
                 onSubmit={(data) => { console.log('New organization data:', data) }}
             />
-        </div>
+        </div >
     )
 }
 

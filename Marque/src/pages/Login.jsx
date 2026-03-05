@@ -87,7 +87,6 @@ function Login({ onLogin }) {
                             />
                         </div>
 
-                        {/* Error message */}
                         {error && (
                             <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">

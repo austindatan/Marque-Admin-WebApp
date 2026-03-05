@@ -15,7 +15,6 @@ import {
 } from '@/components/ui/table'
 import StudentForms from '@/pages/forms/StudentForms'
 
-// ── Avatar helpers ──────────────────────────────────────────────────────────
 const avatarColors = [
     ['#dbeafe', '#1d4ed8'],
     ['#ede9fe', '#6d28d9'],
@@ -75,8 +74,6 @@ function getOrgColor(name = '') {
     return orgChipColors[Math.abs(hash) % orgChipColors.length]
 }
 
-// ── Org Chips — compact display for multiple orgs ──────────────────────────
-// Shows up to 2 chips inline; overflows collapse into a "+N more" indicator
 function OrgChips({ orgs = [] }) {
     const [expanded, setExpanded] = useState(false)
 
@@ -92,7 +89,6 @@ function OrgChips({ orgs = [] }) {
                 const acronym = getOrgAcronym(o.org_name)
                 return (
                     <div key={i} className="flex items-center gap-1.5 min-w-0">
-                        {/* Org avatar */}
                         <div
                             className="h-5 w-5 rounded-md shrink-0 flex items-center justify-center text-[8px] font-extrabold"
                             style={{ backgroundColor: o.pfp ? 'transparent' : bg, color: fg }}
@@ -102,11 +98,9 @@ function OrgChips({ orgs = [] }) {
                                 : acronym
                             }
                         </div>
-                        {/* Org name */}
                         <span className="text-xs font-medium truncate max-w-[110px]" title={o.org_name}>
                             {o.org_name}
                         </span>
-                        {/* Role badge */}
                         <Badge
                             variant="outline"
                             className={`text-[9px] font-bold px-1.5 py-0 border shrink-0 ${roleBadgeStyle[o.role] ?? 'bg-gray-100 text-gray-600'}`}
@@ -117,7 +111,6 @@ function OrgChips({ orgs = [] }) {
                 )
             })}
 
-            {/* Overflow toggle */}
             {!expanded && overflow > 0 && (
                 <button
                     onClick={() => setExpanded(true)}
@@ -138,7 +131,6 @@ function OrgChips({ orgs = [] }) {
     )
 }
 
-// ── Component ───────────────────────────────────────────────────────────────
 function Students() {
     const [isFormOpen, setIsFormOpen] = useState(false)
     const [search, setSearch] = useState('')
@@ -152,7 +144,6 @@ function Students() {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
 
-    // ── Fetch students ──────────────────────────────────────────────────────
     useEffect(() => {
         fetch('http://localhost:5000/students')
             .then(r => { if (!r.ok) throw new Error(); return r.json() })
@@ -160,7 +151,6 @@ function Students() {
             .catch(() => { setError('Could not load students. Is the backend running?'); setLoading(false) })
     }, [])
 
-    // ── Fetch colleges ──────────────────────────────────────────────────────
     useEffect(() => {
         fetch('http://localhost:5000/colleges')
             .then(r => r.json())
@@ -168,7 +158,6 @@ function Students() {
             .catch(() => { })
     }, [])
 
-    // ── Fetch departments when college changes ──────────────────────────────
     useEffect(() => {
         setDepartmentFilter('')
         const url = collegeFilter
@@ -180,7 +169,6 @@ function Students() {
             .catch(() => { })
     }, [collegeFilter])
 
-    // ── Filtering ───────────────────────────────────────────────────────────
     const filtered = students.filter(s => {
         const name = getFullName(s.users_id)
         const email = s.users_id?.email ?? ''
@@ -213,7 +201,6 @@ function Students() {
     return (
         <div className="p-8 space-y-6">
 
-            {/* ── Header ── */}
             <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
                     <h1 className="text-3xl font-extrabold text-primary tracking-tight">Students</h1>
@@ -229,10 +216,8 @@ function Students() {
 
             <StudentForms open={isFormOpen} onOpenChange={setIsFormOpen} onSubmit={handleAddStudent} />
 
-            {/* ── Filter Bar ── */}
             <div className="flex flex-wrap items-center gap-3">
 
-                {/* Role pill filter */}
                 <div className="flex items-center gap-1 bg-muted p-1 rounded-xl">
                     {ROLE_FILTERS.map(f => (
                         <button
@@ -248,7 +233,6 @@ function Students() {
                     ))}
                 </div>
 
-                {/* College dropdown */}
                 <select
                     value={collegeFilter}
                     onChange={e => setCollegeFilter(e.target.value)}
@@ -260,7 +244,6 @@ function Students() {
                     ))}
                 </select>
 
-                {/* Department dropdown — narrows when college is selected */}
                 <select
                     value={departmentFilter}
                     onChange={e => setDepartmentFilter(e.target.value)}
@@ -272,7 +255,6 @@ function Students() {
                     ))}
                 </select>
 
-                {/* Search */}
                 <div className="relative ml-auto w-64">
                     <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -286,7 +268,6 @@ function Students() {
                 </div>
             </div>
 
-            {/* Loading skeleton */}
             {loading && (
                 <Card className="shadow-sm">
                     <CardContent className="p-0">
@@ -334,7 +315,6 @@ function Students() {
                 </Card>
             )}
 
-            {/* ── Error ── */}
             {error && !loading && (
                 <div className="text-center py-20 text-red-500">
                     <p className="text-4xl mb-3">⚠️</p>
@@ -342,7 +322,6 @@ function Students() {
                 </div>
             )}
 
-            {/* ── Table ── */}
             {!loading && !error && (
                 <Card className="shadow-sm">
                     <CardHeader className="pb-4">
@@ -375,12 +354,10 @@ function Students() {
                                     return (
                                         <TableRow key={student._id} className="align-top">
 
-                                            {/* Student ID */}
                                             <TableCell className="font-mono text-xs text-muted-foreground pt-4">
                                                 {student.student_number ?? '—'}
                                             </TableCell>
 
-                                            {/* Name + avatar */}
                                             <TableCell className="pt-3">
                                                 <div className="flex items-center gap-3">
                                                     <Avatar className="h-8 w-8 rounded-full shrink-0">
@@ -399,29 +376,24 @@ function Students() {
                                                 </div>
                                             </TableCell>
 
-                                            {/* Email */}
                                             <TableCell className="text-xs text-muted-foreground pt-4">
                                                 {student.users_id?.email ?? '—'}
                                             </TableCell>
 
-                                            {/* Department */}
                                             <TableCell className="pt-4">
                                                 <span className="text-sm">{dept}</span>
                                                 {deptCode && <span className="ml-1 text-[10px] font-mono text-muted-foreground">({deptCode})</span>}
                                             </TableCell>
 
-                                            {/* College */}
                                             <TableCell className="pt-4">
                                                 <span className="text-sm">{college}</span>
                                                 {collegeCode && <span className="ml-1 text-[10px] font-mono text-muted-foreground">({collegeCode})</span>}
                                             </TableCell>
 
-                                            {/* Organizations — multi-org chips */}
                                             <TableCell className="pt-3">
                                                 <OrgChips orgs={student.orgs} />
                                             </TableCell>
 
-                                            {/* Actions */}
                                             <TableCell className="text-right pt-3">
                                                 <div className="flex justify-end gap-2">
                                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50">

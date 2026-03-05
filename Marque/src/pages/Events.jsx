@@ -14,7 +14,6 @@ const statusStyles = {
     Cancelled: 'bg-red-100 text-red-500',
 }
 
-// Fallback gradients and emojis for events without a cover image
 const GRADIENTS = [
     { from: '#0A0F51', to: '#3b4fd8' },
     { from: '#1e3a5f', to: '#2563eb' },
@@ -102,25 +101,20 @@ function Events() {
                 </div>
             </div>
 
-            {/* Loading skeleton — 8 card placeholders */}
             {loading && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                     {Array.from({ length: 8 }).map((_, i) => (
                         <Card key={i} className="overflow-hidden shadow-sm">
-                            {/* Image area */}
                             <Skeleton className="h-36 w-full rounded-none" />
                             <CardContent className="pt-4 pb-5 px-5 space-y-3">
-                                {/* Title + org */}
                                 <div className="space-y-2">
                                     <Skeleton className="h-4 w-3/4" />
                                     <Skeleton className="h-3 w-1/2" />
                                 </div>
-                                {/* Date + venue */}
                                 <div className="space-y-1.5">
                                     <Skeleton className="h-3 w-2/3" />
                                     <Skeleton className="h-3 w-1/2" />
                                 </div>
-                                {/* Buttons */}
                                 <div className="flex gap-2 pt-1">
                                     <Skeleton className="h-8 flex-1 rounded-md" />
                                     <Skeleton className="h-8 flex-1 rounded-md" />
@@ -131,7 +125,6 @@ function Events() {
                 </div>
             )}
 
-            {/* Error state */}
             {error && !loading && (
                 <div className="text-center py-20 text-red-500">
                     <p className="text-4xl mb-3">⚠️</p>
@@ -139,7 +132,6 @@ function Events() {
                 </div>
             )}
 
-            {/* Events grid */}
             {!loading && !error && (
                 <>
                     <p className="text-sm text-muted-foreground">{filtered.length} event{filtered.length !== 1 ? 's' : ''}</p>
