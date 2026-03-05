@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -29,51 +29,28 @@ import {
 } from '@/components/ui/select'
 
 const studentSchema = z.object({
-    studentId: z.string({ required_error: 'Student ID is required.' }).min(1, 'Student ID is required.'),
-    firstName: z.string({ required_error: 'First name is required.' }).min(1, 'First name is required.'),
+    studentId: z.string().min(1, 'Student ID is required.'),
+    firstName: z.string().min(1, 'First name is required.'),
     middleName: z.string().optional(),
-    lastName: z.string({ required_error: 'Last name is required.' }).min(1, 'Last name is required.'),
-    college: z.string({ required_error: 'College is required.' }).min(1, 'College is required.'),
-    department: z.string({ required_error: 'Department is required.' }).min(1, 'Department is required.'),
-    year: z.string({ required_error: 'Year level is required.' }).min(1, 'Year level is required.'),
-    org: z.string({ required_error: 'Organization is required.' }).min(1, 'Organization is required.'),
-    role: z.string({ required_error: 'Role is required.' }).min(1, 'Role is required.'),
-    username: z.string({ required_error: 'Username is required.' }).min(1, 'Username is required.'),
-    email: z.string({ required_error: 'Email is required.' }).email('Enter a valid email address.'),
-    contactNumber: z.string({
-        required_error: 'Contact number is required.',
-        invalid_type_error: 'Contact number is required.',
-    }).min(1, 'Contact number is required.'),
-    password: z.string({
-        required_error: 'Password is required.',
-        invalid_type_error: 'Password is required.',
-    }).min(8, 'Password must be at least 8 characters.'),
+    lastName: z.string().min(1, 'Last name is required.'),
+    college: z.string().min(1, 'College is required.'),
+    department: z.string().min(1, 'Department is required.'),
+    org: z.string().optional(),
+    role: z.string().optional(),
+    username: z.string().min(1, 'Username is required.'),
+    email: z.string().email('Enter a valid email address.'),
+    contactNumber: z.string().min(1, 'Contact number is required.'),
+    password: z.string().min(8, 'Password must be at least 8 characters.'),
 })
-
-const COLLEGE_OPTIONS = [
-    'College of Engineering and Architecture',
-    'College of Information Technology and Computing',
-    'College of Science and Mathematics',
-    'College of Science and Technology Education',
-    'College of Technology',
-    'College of Medicine',
-    'Senior High School',
-]
-
-const DEPARTMENT_OPTIONS = [
-    'Department of Information Technology',
-    'Department of Technology Communication Management',
-    'Department of Data Science',
-    'Department of Computer Science',
-]
-
-const YEAR_OPTIONS = ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year']
-const ORG_OPTIONS = ['CSS', 'ITSOC', 'IEEE', 'ACM', 'None']
-const ROLE_OPTIONS = ['President', 'Manager', 'Committee']
 
 const Req = () => <span className="text-red-500 ml-0.5">*</span>
 
 function StudentForms({ open, onOpenChange, onSubmit }) {
+    const [colleges, setColleges] = useState([])
+    const [departments, setDepartments] = useState([])
+    const [organizations, setOrganizations] = useState([])
+    const [roles, setRoles] = useState([])
+
     const form = useForm({
         resolver: zodResolver(studentSchema),
         defaultValues: {
@@ -83,7 +60,6 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
             lastName: '',
             college: '',
             department: '',
-            year: '',
             org: '',
             role: '',
             username: '',
@@ -98,10 +74,72 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
     }, [open])
 
     function handleSubmit(values) {
-        onSubmit?.(values)
-        form.reset()
-        onOpenChange(false)
+        fetch('http://localhost:5000/api/students/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(values),
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to add student');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Student added successfully:', data);
+            onSubmit?.();
+            // Reset form and close dialog
+            form.reset();
+            onOpenChange(false);
+        })
+        .catch(error => {
+            console.error('Error adding student:', error);
+        });
     }
+
+    // fetch colleges
+    useEffect(() => {
+        fetch('http://localhost:5000/colleges')
+            .then(r => r.json())
+            .then(data => setColleges(data))
+            .catch(() => setColleges([]))
+    }, [])
+
+    // fetch departments 
+    useEffect(() => {
+        const collegeId = form.watch('college')
+        const url = collegeId
+            ? `http://localhost:5000/departments?college_id=${collegeId}`
+            : 'http://localhost:5000/departments'
+        fetch(url)
+            .then(r => r.json())
+            .then(data => setDepartments(data))
+            .catch(() => setDepartments([]))
+
+        // reset department when college changes
+        form.setValue('department', '')
+    }, [form.watch('college')])
+
+    // fetch organizations
+    useEffect(() => {
+        fetch('http://localhost:5000/organizations')
+            .then(r => r.json())
+            .then(data => setOrganizations(data))
+            .catch(() => setOrganizations([]))
+    }, [])
+
+    // fetch roles
+    useEffect(() => {
+    fetch('http://localhost:5000/api/students/roles') 
+        .then(res => {
+            if (!res.ok) throw new Error('Failed to fetch');
+            return res.json();
+        })
+        .then(data => setRoles(data))
+        .catch(err => console.error('Failed to fetch roles:', err));
+}, []);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -114,11 +152,8 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
                 </DialogHeader>
 
                 <Form {...form}>
-                    <form
-                        onSubmit={form.handleSubmit(handleSubmit)}
-                        className="space-y-5 pt-2"
-                    >
-                        {/* ── Student ID ── */}
+                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-5 pt-2">
+                        {/* Student ID */}
                         <FormField
                             control={form.control}
                             name="studentId"
@@ -133,7 +168,7 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
                             )}
                         />
 
-                        {/* ── Name row: First | Middle (opt) ── */}
+                        {/* Name row */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <FormField
                                 control={form.control}
@@ -166,7 +201,7 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
                             />
                         </div>
 
-                        {/* ── Last Name ── */}
+                        {/* Last Name */}
                         <FormField
                             control={form.control}
                             name="lastName"
@@ -181,96 +216,77 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
                             )}
                         />
 
-                        {/* ── College (full width) ── */}
+                        {/* College */}
                         <FormField
                             control={form.control}
                             name="college"
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>College<Req /></FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl>
+                                    <FormControl>
+                                        <Select onValueChange={field.onChange} value={field.value || ''}>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select College" />
                                             </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            {COLLEGE_OPTIONS.map(c => (
-                                                <SelectItem key={c} value={c}>{c}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                            <SelectContent>
+                                                {(colleges || []).map(c => (
+                                                    <SelectItem key={c._id} value={c._id}>{c.college_name}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
 
-                        {/* ── Department  ── */}
+                        {/* Department */}
                         <FormField
                             control={form.control}
                             name="department"
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Department<Req /></FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl>
+                                    <FormControl>
+                                        <Select onValueChange={field.onChange} value={field.value || ''}>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select Department" />
                                             </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            {DEPARTMENT_OPTIONS.map(d => (
-                                                <SelectItem key={d} value={d}>{d}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                            <SelectContent>
+                                                {(departments || []).map(d => (
+                                                    <SelectItem key={d._id} value={d._id}>{d.department_name}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
 
-                        {/* Selects: Year | Organization | Role */}
+                        {/* Org | Role */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="year"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Year<Req /></FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select Year" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                {YEAR_OPTIONS.map(y => (
-                                                    <SelectItem key={y} value={y}>{y}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
                             <FormField
                                 control={form.control}
                                 name="org"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Organization<Req /></FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl>
+                                        <FormLabel>
+                                            Organization{' '}
+                                            <span className="text-muted-foreground font-normal text-xs">(Optional)</span>
+                                        </FormLabel>
+                                        <FormControl>
+                                            <Select onValueChange={field.onChange} value={field.value || ''}>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Select Org" />
                                                 </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                {ORG_OPTIONS.map(o => (
-                                                    <SelectItem key={o} value={o}>{o}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                                <SelectContent>
+                                                    {(organizations || []).map(o => (
+                                                        <SelectItem key={o._id} value={o._id}>{o.org_name}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -280,19 +296,22 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
                                 name="role"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Role<Req /></FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl>
+                                        <FormLabel>
+                                            Role{' '}
+                                            <span className="text-muted-foreground font-normal text-xs">(Optional)</span>
+                                        </FormLabel>
+                                        <FormControl>
+                                            <Select onValueChange={field.onChange} value={field.value || ''}>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Select Role" />
                                                 </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                {ROLE_OPTIONS.map(r => (
-                                                    <SelectItem key={r} value={r}>{r}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                                <SelectContent>
+                                                    {(roles || []).map(r => (
+                                                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -303,7 +322,7 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
                             Account Details
                         </p>
 
-                        {/* Username | Email*/}
+                        {/* Username | Email */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <FormField
                                 control={form.control}
