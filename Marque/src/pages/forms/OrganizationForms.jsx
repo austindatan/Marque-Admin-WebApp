@@ -28,7 +28,6 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 
-// ─── Zod Schema ────────────────────────────────────────────────────────────────
 const organizationSchema = z.object({
     logo: z.any().optional(),
     name: z.string({ required_error: 'Organization Name is required.' }).min(1, 'Organization Name is required.'),
@@ -41,7 +40,6 @@ const organizationSchema = z.object({
     xLink: z.string().optional(),
 })
 
-// ─── Select Options ────────────────────────────────────────────────────────────
 const TYPE_OPTIONS = [
     'Mother Organization',
     'Unit Organization',
@@ -54,10 +52,8 @@ const DEPARTMENT_OPTIONS = [
     'Department of Computer Science',
 ]
 
-// Renders a red asterisk for required field labels
 const Req = () => <span className="text-red-500 ml-0.5">*</span>
 
-// ─── Component ─────────────────────────────────────────────────────────────────
 function OrganizationForms({ open, onOpenChange, onSubmit }) {
     const fileInputRef = useRef(null)
     const [logoPreview, setLogoPreview] = useState(null)
@@ -77,7 +73,6 @@ function OrganizationForms({ open, onOpenChange, onSubmit }) {
         },
     })
 
-    // Reset every time the dialog closes
     useEffect(() => {
         if (!open) {
             form.reset()
