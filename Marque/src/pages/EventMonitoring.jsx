@@ -47,12 +47,6 @@ export default function EventMonitoring() {
 
     const currentEvent = events.find(e => e._id === selectedEventId) || events[0] || {}
 
-    // Sync URL when dropdown changes
-    const handleEventChange = (e) => {
-        const newId = e.target.value
-        setSelectedEventId(newId)
-        navigate(`/events/monitoring/${newId}`)
-    }
 
     // Update selectedEventId if URL changes directly
     useEffect(() => {
@@ -88,18 +82,7 @@ export default function EventMonitoring() {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3 bg-white p-2 border rounded-xl shadow-sm">
-                    <span className="text-sm font-semibold text-muted-foreground ml-2">Event:</span>
-                    <select
-                        className="bg-transparent border-none text-sm font-medium focus:ring-0 cursor-pointer min-w-[200px]"
-                        value={selectedEventId}
-                        onChange={handleEventChange}
-                    >
-                        {events.map(event => (
-                            <option key={event._id} value={event._id}>{event.event_name}</option>
-                        ))}
-                    </select>
-                </div>
+                
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
