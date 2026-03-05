@@ -194,8 +194,12 @@ function Students() {
         return matchSearch && matchRole && matchCollege && matchDepartment
     })
 
-    function handleAddStudent(values) {
-        console.log('New student submitted:', values)
+    function handleAddStudent() {
+        // Refresh the students list after successful addition
+        fetch('http://localhost:5000/students')
+            .then(r => { if (!r.ok) throw new Error(); return r.json() })
+            .then(data => setStudents(data))
+            .catch(err => console.error('Failed to refresh students:', err));
     }
 
     return (

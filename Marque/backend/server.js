@@ -16,6 +16,7 @@ const College = require("./models/College");
 const Department = require("./models/Department");
 const OrgOfficer = require("./models/Org_officer");
 const attendanceRoutes = require("./routes/attendance");
+const studentRoutes = require("./routes/studentRoutes");
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use("/attendance", attendanceRoutes);
+app.use("/api/students", studentRoutes);
 
 // ===== MONGODB CONNECTION =====
 mongoose.connect(process.env.MONGODB_URI)
