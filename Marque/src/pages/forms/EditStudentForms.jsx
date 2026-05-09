@@ -40,12 +40,12 @@ const studentSchema = z.object({
     username: z.string().optional(),
     email: z.union([z.literal(''), z.string().email('Enter a valid email address.')]).optional(),
     contactNumber: z.string().optional(),
-    password: z.string().min(1, 'Password is required.'),
+    password: z.string().optional(),
 })
 
 const Req = () => <span className="text-red-500 ml-0.5">*</span>
 
-function StudentForms({ open, onOpenChange, onSubmit }) {
+function EditStudentForms({ open, onOpenChange, onSubmit, initialData }) {
     const [colleges, setColleges] = useState([])
     const [departments, setDepartments] = useState([])
     const [organizations, setOrganizations] = useState([])
@@ -70,8 +70,31 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
     })
 
     useEffect(() => {
-        if (!open) form.reset()
-    }, [open])
+        if (open && initialData) {
+            const user = initialData.users_id || {}
+            
+            // Extract the first organization and role if they exist
+            const org = initialData.orgs?.[0]?.org_id || ''
+            const role = initialData.orgs?.[0]?.role || ''
+
+            form.reset({
+                studentId: initialData.student_number || '',
+                firstName: user.firstname || '',
+                middleName: user.middlename || '',
+                lastName: user.lastname || '',
+                college: initialData.college_id?._id || '',
+                department: initialData.department_id?._id || '',
+                org: org,
+                role: role,
+                username: user.username || '',
+                email: user.email || '',
+                contactNumber: user.contact_number || '',
+                password: '', // Leave blank when editing unless they want to change it
+            })
+        } else if (!open) {
+            form.reset()
+        }
+    }, [open, initialData, form])
 
     // Sync password with studentId
     useEffect(() => {
@@ -82,36 +105,16 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
     }, [form.watch('studentId'), form.setValue])
 
     function handleSubmit(values) {
-        fetch('http://localhost:5000/api/students/add', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(values),
-        })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to add student');
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Student added successfully:', data);
-                onSubmit?.();
-                // Reset form and close dialog
-                form.reset();
-                onOpenChange(false);
-            })
-            .catch(error => {
-                console.error('Error adding student:', error);
-            });
+        onSubmit?.(values)
+        form.reset()
+        onOpenChange(false)
     }
 
     // fetch colleges
     useEffect(() => {
         fetch('http://localhost:5000/colleges')
             .then(r => r.json())
-            .then(data => setColleges(data))
+            .then(data => setColleges(Array.isArray(data) ? data : []))
             .catch(() => setColleges([]))
     }, [])
 
@@ -123,29 +126,26 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
             : 'http://localhost:5000/departments'
         fetch(url)
             .then(r => r.json())
-            .then(data => setDepartments(data))
+            .then(data => setDepartments(Array.isArray(data) ? data : []))
             .catch(() => setDepartments([]))
-
-        // reset department when college changes
-        form.setValue('department', '')
     }, [form.watch('college')])
 
     // fetch organizations
     useEffect(() => {
         fetch('http://localhost:5000/organizations')
             .then(r => r.json())
-            .then(data => setOrganizations(data))
+            .then(data => setOrganizations(Array.isArray(data) ? data : []))
             .catch(() => setOrganizations([]))
     }, [])
 
     // fetch roles
     useEffect(() => {
-        fetch('http://localhost:5000/api/students/roles')
+        fetch('http://localhost:5000/api/students/roles') 
             .then(res => {
                 if (!res.ok) throw new Error('Failed to fetch');
                 return res.json();
             })
-            .then(data => setRoles(data))
+            .then(data => setRoles(Array.isArray(data) ? data : []))
             .catch(err => console.error('Failed to fetch roles:', err));
     }, []);
 
@@ -153,9 +153,9 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[580px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle className="text-xl font-bold">Add New Student</DialogTitle>
+                    <DialogTitle className="text-xl font-bold">Edit Student</DialogTitle>
                     <DialogDescription className="text-sm text-muted-foreground">
-                        Fill in the student details below. Fields marked as optional may be left blank.
+                        Update the student details below. Fields marked <Req /> are required.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -231,7 +231,7 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>College<Req /></FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <Select onValueChange={field.onChange} value={field.value || undefined}>
                                         <FormControl>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select College" />
@@ -255,7 +255,7 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Department<Req /></FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <Select onValueChange={field.onChange} value={field.value || undefined}>
                                         <FormControl>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select Department" />
@@ -273,17 +273,16 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
                         />
 
                         {/* Org | Role */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <FormField
                                 control={form.control}
                                 name="org"
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>
-                                            Organization{' '}
-                                            <span className="text-muted-foreground font-normal text-xs">(Optional)</span>
+                                            Organization
                                         </FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <Select onValueChange={field.onChange} value={field.value || undefined}>
                                             <FormControl>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Select Org" />
@@ -305,10 +304,9 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>
-                                            Role{' '}
-                                            <span className="text-muted-foreground font-normal text-xs">(Optional)</span>
+                                            Role
                                         </FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <Select onValueChange={field.onChange} value={field.value || undefined}>
                                             <FormControl>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Select Role" />
@@ -326,7 +324,7 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
                             />
                         </div>
 
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest pt-1">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest pt-1 border-t mt-4 mb-2 pt-4">
                             Account Details
                         </p>
 
@@ -389,7 +387,7 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
                                 name="password"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Password<Req /></FormLabel>
+                                        <FormLabel>Password</FormLabel>
                                         <FormControl>
                                             <Input type="password" placeholder="Auto-filled from Student ID" readOnly className="bg-muted" {...field} />
                                         </FormControl>
@@ -405,7 +403,7 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                 </svg>
-                                Publish User
+                                Save Changes
                             </Button>
                         </div>
                     </form>
@@ -415,4 +413,4 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
     )
 }
 
-export default StudentForms
+export default EditStudentForms

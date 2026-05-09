@@ -5,6 +5,9 @@ const studentController = require('../controllers/studentController');
 // Add student
 router.post('/add', studentController.addStudent);
 
+// Update student
+router.patch('/:id', studentController.updateStudent);
+
 // Dropdowns
 router.get('/colleges', studentController.getColleges);
 router.get('/departments', studentController.getDepartments);

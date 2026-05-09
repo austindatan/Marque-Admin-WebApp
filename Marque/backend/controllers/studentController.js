@@ -15,21 +15,27 @@ exports.addStudent = async (req, res) => {
             lastName,
             college,
             department,
-            org, 
-            role, 
+            org,
+            role,
             username,
             email,
             contactNumber,
             password,
         } = req.body;
 
-        if (!studentId || !firstName || !lastName || !college || !department || !username || !email || !contactNumber || !password) {
+        if (!studentId || !firstName || !lastName || !college || !department || !password) {
             return res.status(400).json({ message: 'Missing required fields' });
         }
 
-        const existingUser = await User.findOne({ $or: [{ username }, { email }] });
-        if (existingUser) {
-            return res.status(409).json({ message: 'Username or email already exists' });
+        if (username || email) {
+            const query = [];
+            if (username) query.push({ username });
+            if (email) query.push({ email });
+
+            const existingUser = await User.findOne({ $or: query });
+            if (existingUser) {
+                return res.status(409).json({ message: 'Username or email already exists' });
+            }
         }
 
         const existingStudent = await Student.findOne({ student_number: studentId });
@@ -42,13 +48,13 @@ exports.addStudent = async (req, res) => {
 
         // Create User 
         const newUser = await User.create({
-            username,
+            username: username || studentId,
             password: hashedPassword,
             firstname: firstName,
             middlename: middleName || '',
             lastname: lastName,
-            contact_number: contactNumber,
-            email,
+            contact_number: contactNumber || '',
+            email: email || `${studentId}@school.edu.ph`,
             role: 'Student',
             profile_image: ''
         });
@@ -83,6 +89,91 @@ exports.addStudent = async (req, res) => {
     }
 };
 
+exports.updateStudent = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const {
+            studentId,
+            firstName,
+            middleName,
+            lastName,
+            college,
+            department,
+            org,
+            role,
+            username,
+            email,
+            contactNumber,
+            password,
+        } = req.body;
+
+        const student = await Student.findById(id);
+        if (!student) return res.status(404).json({ message: 'Student not found' });
+
+        const user = await User.findById(student.users_id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        // Check if new student number is already used
+        if (studentId && studentId !== student.student_number) {
+            const existingStudent = await Student.findOne({ student_number: studentId });
+            if (existingStudent) return res.status(409).json({ message: 'Student ID already exists' });
+        }
+
+        // Check if username/email already used by someone else
+        if ((username && username !== user.username) || (email && email !== user.email)) {
+            const existingUser = await User.findOne({
+                $or: [{ username }, { email }],
+                _id: { $ne: user._id }
+            });
+            if (existingUser) return res.status(409).json({ message: 'Username or email already exists' });
+        }
+
+        // Update User
+        user.firstname = firstName || user.firstname;
+        user.middlename = middleName !== undefined ? middleName : user.middlename;
+        user.lastname = lastName || user.lastname;
+        user.username = username || user.username || student.student_number;
+        user.email = email || user.email || `${student.student_number}@school.edu.ph`;
+        user.contact_number = contactNumber || user.contact_number || '';
+
+        if (password && password.trim() !== '') {
+            const saltRounds = 10;
+            const bcrypt = require('bcryptjs');
+            user.password = await bcrypt.hash(password, saltRounds);
+        }
+        await user.save();
+
+        // Update Student
+        student.student_number = studentId || student.student_number;
+        student.college_id = college || student.college_id;
+        student.department_id = department || student.department_id;
+        await student.save();
+
+        // Update OrgOfficer
+        let orgOfficer = await OrgOfficer.findOne({ student_id: student._id });
+        if (org && role) {
+            if (orgOfficer) {
+                orgOfficer.org_id = org;
+                orgOfficer.role = role;
+                await orgOfficer.save();
+            } else {
+                orgOfficer = await OrgOfficer.create({
+                    student_id: student._id,
+                    org_id: org,
+                    role: role,
+                });
+            }
+        } else if (orgOfficer) {
+            await OrgOfficer.findByIdAndDelete(orgOfficer._id);
+        }
+
+        res.status(200).json({ message: 'Student updated successfully', student, user });
+    } catch (err) {
+        console.error('Error in updateStudent:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
+    }
+};
+
 exports.getColleges = async (req, res) => {
     try {
         const colleges = await College.find({});
@@ -96,7 +187,7 @@ exports.getDepartments = async (req, res) => {
     try {
         const { college_id } = req.query;
         let query = {};
-        
+
         // filter departments by college
         if (college_id) {
             query = { college_id: college_id };
