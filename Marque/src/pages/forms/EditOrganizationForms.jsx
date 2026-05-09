@@ -54,7 +54,7 @@ const DEPARTMENT_OPTIONS = [
 
 const Req = () => <span className="text-red-500 ml-0.5">*</span>
 
-function OrganizationForms({ open, onOpenChange, onSubmit }) {
+function EditOrganizationForms({ open, onOpenChange, onSubmit, initialData }) {
     const fileInputRef = useRef(null)
     const [logoPreview, setLogoPreview] = useState(null)
 
@@ -74,12 +74,25 @@ function OrganizationForms({ open, onOpenChange, onSubmit }) {
     })
 
     useEffect(() => {
-        if (!open) {
+        if (open && initialData) {
+            form.reset({
+                logo: null,
+                name: initialData.org_name || '',
+                type: initialData.org_type || '',
+                department: initialData.department_id?.department_name || '',
+                moderator: initialData.moderator_name || '',
+                description: initialData.description || '',
+                facebookLink: initialData.facebook_link || '',
+                instagramLink: initialData.instagram_link || '',
+                xLink: initialData.x_link || '',
+            })
+            setLogoPreview(initialData.pfp || null)
+        } else if (!open) {
             form.reset()
             setLogoPreview(null)
             if (fileInputRef.current) fileInputRef.current.value = ''
         }
-    }, [open, form])
+    }, [open, initialData, form])
 
     function handleSubmit(values) {
         onSubmit?.(values)
@@ -108,9 +121,9 @@ function OrganizationForms({ open, onOpenChange, onSubmit }) {
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle className="text-xl font-bold">Add New Organization</DialogTitle>
+                    <DialogTitle className="text-xl font-bold">Edit Organization</DialogTitle>
                     <DialogDescription className="text-sm text-muted-foreground">
-                        Fill in the organization details below. Fields marked <Req /> are required.
+                        Update the organization details below. Fields marked <Req /> are required.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -332,7 +345,7 @@ function OrganizationForms({ open, onOpenChange, onSubmit }) {
                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                 </svg>
-                                Add Organization
+                                Save Changes
                             </Button>
                         </div>
                     </form>
@@ -342,4 +355,4 @@ function OrganizationForms({ open, onOpenChange, onSubmit }) {
     )
 }
 
-export default OrganizationForms
+export default EditOrganizationForms

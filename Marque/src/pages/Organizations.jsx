@@ -14,6 +14,8 @@ import {
     TableRow,
 } from '@/components/ui/table'
 import OrganizationForms from './forms/OrganizationForms'
+import EditOrganizationForms from './forms/EditOrganizationForms'
+import ViewOrganizationForms from './forms/ViewOrganizationForms'
 
 const orgColors = [
     ['#dbeafe', '#1d4ed8'],
@@ -51,6 +53,10 @@ const typeBadgeStyle = {
 
 function Organizations() {
     const [isAddOpen, setIsAddOpen] = useState(false)
+    const [isEditOpen, setIsEditOpen] = useState(false)
+    const [editData, setEditData] = useState(null)
+    const [isViewOpen, setIsViewOpen] = useState(false)
+    const [viewData, setViewData] = useState(null)
     const [search, setSearch] = useState('')
     const [typeFilter, setTypeFilter] = useState('All')
     const [departmentFilter, setDepartmentFilter] = useState('')
@@ -276,13 +282,29 @@ function Organizations() {
 
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-2">
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50">
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon" 
+                                                        className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                                                        onClick={() => {
+                                                            setViewData(org)
+                                                            setIsViewOpen(true)
+                                                        }}
+                                                    >
                                                         <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                         </svg>
                                                     </Button>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50">
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon" 
+                                                        className="h-8 w-8 text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50"
+                                                        onClick={() => {
+                                                            setEditData(org)
+                                                            setIsEditOpen(true)
+                                                        }}
+                                                    >
                                                         <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                                         </svg>
@@ -310,6 +332,25 @@ function Organizations() {
                 open={isAddOpen}
                 onOpenChange={setIsAddOpen}
                 onSubmit={(data) => { console.log('New organization data:', data) }}
+            />
+
+            <EditOrganizationForms
+                open={isEditOpen}
+                onOpenChange={(open) => {
+                    setIsEditOpen(open)
+                    if (!open) setEditData(null)
+                }}
+                initialData={editData}
+                onSubmit={(data) => { console.log('Update organization data:', { id: editData._id, ...data }) }}
+            />
+
+            <ViewOrganizationForms
+                open={isViewOpen}
+                onOpenChange={(open) => {
+                    setIsViewOpen(open)
+                    if (!open) setViewData(null)
+                }}
+                initialData={viewData}
             />
         </div >
     )
