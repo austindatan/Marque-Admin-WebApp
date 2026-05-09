@@ -153,7 +153,7 @@ app.get("/students", async (req, res) => {
   try {
     // Fetch all students with populated references
     const students = await Student.find()
-      .populate("users_id", "firstname middlename lastname email profile_image")
+      .populate("users_id", "username firstname middlename lastname email contact_number profile_image")
       .populate("college_id", "college_name college_code")
       .populate("department_id", "department_name department_code")
       .lean();
@@ -163,12 +163,13 @@ app.get("/students", async (req, res) => {
       .populate("org_id", "org_name pfp")
       .lean();
 
-    // Build a map: student_id -> [ { org_name, pfp, role }, ... ]
+    // Build a map: student_id -> [ { org_id, org_name, pfp, role }, ... ]
     const orgMap = {};
     officers.forEach(o => {
       const sid = o.student_id.toString();
       if (!orgMap[sid]) orgMap[sid] = [];
       orgMap[sid].push({
+        org_id: o.org_id?._id ?? null,
         org_name: o.org_id?.org_name ?? 'Unknown',
         pfp: o.org_id?.pfp ?? null,
         role: o.role,
