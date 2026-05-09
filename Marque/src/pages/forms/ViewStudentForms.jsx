@@ -27,8 +27,7 @@ function ViewStudentForms({ open, onOpenChange, initialData }) {
             lastName: '',
             college: '',
             department: '',
-            org: '',
-            role: '',
+            orgs: [],
             username: '',
             email: '',
             contactNumber: '',
@@ -38,10 +37,10 @@ function ViewStudentForms({ open, onOpenChange, initialData }) {
     useEffect(() => {
         if (open && initialData) {
             const user = initialData.users_id || {}
-            
-            // Extract the first organization and role if they exist
-            const orgName = initialData.orgs?.[0]?.org_name || 'N/A'
-            const roleName = initialData.orgs?.[0]?.role || 'N/A'
+            const orgsData = (initialData.orgs || []).map(o => ({
+                org: o.org_name || o.org_id?.org_name || 'Unknown',
+                role: o.role || 'N/A'
+            }))
 
             form.reset({
                 studentId: initialData.student_number || '',
@@ -50,8 +49,7 @@ function ViewStudentForms({ open, onOpenChange, initialData }) {
                 lastName: user.lastname || '',
                 college: initialData.college_id?.college_name || 'N/A',
                 department: initialData.department_id?.department_name || 'N/A',
-                org: orgName,
-                role: roleName,
+                orgs: orgsData.length > 0 ? orgsData : [{ org: 'N/A', role: 'N/A' }],
                 username: user.username || '',
                 email: user.email || '',
                 contactNumber: user.contact_number || '',
@@ -157,32 +155,40 @@ function ViewStudentForms({ open, onOpenChange, initialData }) {
                             )}
                         />
 
-                        {/* Org | Role */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="org"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Organization</FormLabel>
-                                        <FormControl>
-                                            <Input readOnly {...field} />
-                                        </FormControl>
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="role"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Role</FormLabel>
-                                        <FormControl>
-                                            <Input readOnly {...field} />
-                                        </FormControl>
-                                    </FormItem>
-                                )}
-                            />
+                        {/* Organizations & Roles */}
+                        <div className="space-y-4">
+                            <FormLabel className="text-sm font-bold text-muted-foreground uppercase tracking-widest border-b pb-2 block">
+                                Organizations & Roles
+                            </FormLabel>
+
+                            {form.watch('orgs').map((item, index) => (
+                                <div key={index} className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 border rounded-xl bg-slate-50/50">
+                                    <FormField
+                                        control={form.control}
+                                        name={`orgs.${index}.org`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Organization</FormLabel>
+                                                <FormControl>
+                                                    <Input readOnly {...field} />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name={`orgs.${index}.role`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Role</FormLabel>
+                                                <FormControl>
+                                                    <Input readOnly {...field} />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                            ))}
                         </div>
 
                         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest pt-1 border-t mt-4 mb-2 pt-4">
