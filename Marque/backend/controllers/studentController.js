@@ -15,8 +15,7 @@ exports.addStudent = async (req, res) => {
             lastName,
             college,
             department,
-            org,
-            role,
+            orgs,
             username,
             email,
             contactNumber,
@@ -67,21 +66,26 @@ exports.addStudent = async (req, res) => {
             student_number: studentId,
         });
 
-        // Create OrgOfficer 
-        let orgOfficer = null;
-        if (org && role) {
-            orgOfficer = await OrgOfficer.create({
-                student_id: newStudent._id,
-                org_id: org,
-                role: role,
-            });
+        // Create OrgOfficers 
+        const orgOfficers = [];
+        if (orgs && orgs.length > 0) {
+            for (const item of orgs) {
+                if (item.org && item.role) {
+                    const created = await OrgOfficer.create({
+                        student_id: newStudent._id,
+                        org_id: item.org,
+                        role: item.role,
+                    });
+                    orgOfficers.push(created);
+                }
+            }
         }
 
         res.status(201).json({
             message: 'Student added successfully',
             student: newStudent,
             user: newUser,
-            orgOfficer: orgOfficer
+            orgOfficers
         });
     } catch (err) {
         console.error('Error in addStudent:', err);
@@ -99,8 +103,7 @@ exports.updateStudent = async (req, res) => {
             lastName,
             college,
             department,
-            org,
-            role,
+            orgs,
             username,
             email,
             contactNumber,
@@ -149,22 +152,21 @@ exports.updateStudent = async (req, res) => {
         student.department_id = department || student.department_id;
         await student.save();
 
-        // Update OrgOfficer
-        let orgOfficer = await OrgOfficer.findOne({ student_id: student._id });
-        if (org && role) {
-            if (orgOfficer) {
-                orgOfficer.org_id = org;
-                orgOfficer.role = role;
-                await orgOfficer.save();
-            } else {
-                orgOfficer = await OrgOfficer.create({
-                    student_id: student._id,
-                    org_id: org,
-                    role: role,
-                });
+        // Update OrgOfficers
+        if (orgs !== undefined) {
+            // First, remove existing records
+            await OrgOfficer.deleteMany({ student_id: student._id });
+            
+            // Then, insert the new ones
+            for (const item of orgs) {
+                if (item.org && item.role) {
+                    await OrgOfficer.create({
+                        student_id: student._id,
+                        org_id: item.org,
+                        role: item.role,
+                    });
+                }
             }
-        } else if (orgOfficer) {
-            await OrgOfficer.findByIdAndDelete(orgOfficer._id);
         }
 
         res.status(200).json({ message: 'Student updated successfully', student, user });
