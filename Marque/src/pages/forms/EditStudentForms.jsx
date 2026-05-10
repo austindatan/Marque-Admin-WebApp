@@ -1,3 +1,4 @@
+import { apiFetch } from '../../utils/apiFetch';
 import { useEffect, useState } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -21,6 +22,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
+
     Select,
     SelectContent,
     SelectItem,
@@ -47,11 +49,13 @@ const studentSchema = z.object({
 
 const Req = () => <span className="text-red-500 ml-0.5">*</span>
 
-function EditStudentForms({ open, onOpenChange, onSubmit, initialData }) {
+function EditStudentForms({ open, onOpenChange, onSubmit, onDelete, initialData }) {
     const [colleges, setColleges] = useState([])
     const [departments, setDepartments] = useState([])
     const [organizations, setOrganizations] = useState([])
-    const [roles, setRoles] = useState([])
+    const [roles, setRoles] = useState(['Committee', 'Manager', 'President'])
+    const [existingPresidentsByOrg, setExistingPresidentsByOrg] = useState({})
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
     const form = useForm({
         resolver: zodResolver(studentSchema),
@@ -118,7 +122,7 @@ function EditStudentForms({ open, onOpenChange, onSubmit, initialData }) {
 
     // fetch colleges
     useEffect(() => {
-        fetch('http://localhost:5000/colleges')
+        apiFetch('http://localhost:5000/colleges')
             .then(r => r.json())
             .then(data => setColleges(Array.isArray(data) ? data : []))
             .catch(() => setColleges([]))
@@ -130,7 +134,7 @@ function EditStudentForms({ open, onOpenChange, onSubmit, initialData }) {
         const url = collegeId
             ? `http://localhost:5000/departments?college_id=${collegeId}`
             : 'http://localhost:5000/departments'
-        fetch(url)
+        apiFetch(url)
             .then(r => r.json())
             .then(data => setDepartments(Array.isArray(data) ? data : []))
             .catch(() => setDepartments([]))
@@ -138,24 +142,39 @@ function EditStudentForms({ open, onOpenChange, onSubmit, initialData }) {
 
     // fetch organizations
     useEffect(() => {
-        fetch('http://localhost:5000/organizations')
+        apiFetch('http://localhost:5000/organizations')
             .then(r => r.json())
             .then(data => setOrganizations(Array.isArray(data) ? data : []))
             .catch(() => setOrganizations([]))
     }, [])
 
-    // fetch roles
+    // Fetch existing presidents to enforce one president per organization
     useEffect(() => {
-        fetch('http://localhost:5000/api/students/roles') 
-            .then(res => {
-                if (!res.ok) throw new Error('Failed to fetch');
-                return res.json();
+        apiFetch('http://localhost:5000/students')
+            .then(r => r.json())
+            .then(data => {
+                const orgHasPresident = {};
+                data.forEach(student => {
+                    // skip current student being edited
+                    if (initialData && student._id === initialData._id) return;
+                    (student.orgs || []).forEach(o => {
+                        if (o.role === 'President') {
+                            orgHasPresident[o.org_id] = true;
+                        }
+                    })
+                })
+                setExistingPresidentsByOrg(orgHasPresident);
             })
-            .then(data => setRoles(Array.isArray(data) ? data : []))
-            .catch(err => console.error('Failed to fetch roles:', err));
-    }, []);
+            .catch(err => console.error('Failed to fetch students for validation:', err));
+    }, [initialData]);
+
+    function handleDelete() {
+        if (!initialData || !initialData._id) return;
+        setIsDeleteDialogOpen(true);
+    }
 
     return (
+        <>
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[580px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
@@ -306,9 +325,13 @@ function EditStudentForms({ open, onOpenChange, onSubmit, initialData }) {
                                 // Filter available roles: A student can only be President of one organization
                                 const selectedRoles = form.watch('orgs').map(o => o.role).filter((_, i) => i !== index);
                                 const hasPresident = selectedRoles.some(r => r && r.toLowerCase() === 'president');
+                                const currentOrg = form.watch(`orgs.${index}.org`);
+                                const orgAlreadyHasPresident = currentOrg ? existingPresidentsByOrg[currentOrg] : false;
+
                                 const availableRoles = (roles || []).filter(r => {
                                     if (!r) return false;
                                     if (hasPresident && r.toLowerCase() === 'president') return false;
+                                    if (r.toLowerCase() === 'president' && orgAlreadyHasPresident) return false;
                                     return true;
                                 });
 
@@ -417,8 +440,8 @@ function EditStudentForms({ open, onOpenChange, onSubmit, initialData }) {
                             />
                         </div>
 
-                        {/* Contact Number | Password */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Contact Number */}
+                        <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
                             <FormField
                                 control={form.control}
                                 name="contactNumber"
@@ -435,23 +458,21 @@ function EditStudentForms({ open, onOpenChange, onSubmit, initialData }) {
                                     </FormItem>
                                 )}
                             />
-                            <FormField
-                                control={form.control}
-                                name="password"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Password</FormLabel>
-                                        <FormControl>
-                                            <Input type="password" placeholder="Auto-filled from Student ID" readOnly className="bg-muted" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
                         </div>
 
-                        {/* Submit */}
-                        <div className="pt-2">
+                        {/* Submit and Delete */}
+                        <div className="pt-2 flex gap-4">
+                            <Button 
+                                type="button" 
+                                variant="destructive" 
+                                className="w-full gap-2"
+                                onClick={handleDelete}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                Delete Student
+                            </Button>
                             <Button type="submit" className="w-full gap-2">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -463,6 +484,29 @@ function EditStudentForms({ open, onOpenChange, onSubmit, initialData }) {
                 </Form>
             </DialogContent>
         </Dialog>
+
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <DialogContent className="sm:max-w-[400px]">
+                <DialogHeader>
+                    <DialogTitle>Confirm Deletion</DialogTitle>
+                    <DialogDescription>
+                        Are you sure you want to delete this student? This action cannot be undone.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="flex justify-end gap-3 mt-4">
+                    <Button type="button" variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+                        Cancel
+                    </Button>
+                    <Button type="button" variant="destructive" onClick={() => {
+                        setIsDeleteDialogOpen(false)
+                        onDelete?.(initialData._id)
+                    }}>
+                        Delete Student
+                    </Button>
+                </div>
+            </DialogContent>
+        </Dialog>
+        </>
     )
 }
 

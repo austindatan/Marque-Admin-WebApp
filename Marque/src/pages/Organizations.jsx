@@ -1,3 +1,4 @@
+import { apiFetch } from '../utils/apiFetch';
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -16,6 +17,7 @@ import {
 import OrganizationForms from './forms/OrganizationForms'
 import EditOrganizationForms from './forms/EditOrganizationForms'
 import ViewOrganizationForms from './forms/ViewOrganizationForms'
+
 
 const orgColors = [
     ['#dbeafe', '#1d4ed8'],
@@ -63,20 +65,28 @@ function Organizations() {
 
     const [orgs, setOrgs] = useState([])
     const [departments, setDepartments] = useState([])
+    const [colleges, setColleges] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
 
     useEffect(() => {
-        fetch('http://localhost:5000/organizations')
+        apiFetch('http://localhost:5000/organizations')
             .then(r => { if (!r.ok) throw new Error(); return r.json() })
             .then(data => { setOrgs(data); setLoading(false) })
             .catch(() => { setError('Could not load organizations. Is the backend running?'); setLoading(false) })
     }, [])
 
     useEffect(() => {
-        fetch('http://localhost:5000/departments')
+        apiFetch('http://localhost:5000/departments')
             .then(r => r.json())
             .then(setDepartments)
+            .catch(() => { })
+    }, [])
+
+    useEffect(() => {
+        apiFetch('http://localhost:5000/colleges')
+            .then(r => r.json())
+            .then(setColleges)
             .catch(() => { })
     }, [])
 
@@ -332,6 +342,8 @@ function Organizations() {
                 open={isAddOpen}
                 onOpenChange={setIsAddOpen}
                 departments={departments}
+                colleges={colleges}
+                allOrgs={orgs}
                 onSubmit={async (data) => {
                     try {
                         const formData = new FormData()
@@ -341,14 +353,14 @@ function Organizations() {
                             }
                         }
                         
-                        const res = await fetch('http://localhost:5000/organizations', {
+                        const res = await apiFetch('http://localhost:5000/organizations', {
                             method: 'POST',
                             body: formData
                         })
                         if (!res.ok) throw new Error('Failed to add organization')
                         
                         // refresh
-                        const refreshRes = await fetch('http://localhost:5000/organizations')
+                        const refreshRes = await apiFetch('http://localhost:5000/organizations')
                         const updatedOrgs = await refreshRes.json()
                         setOrgs(updatedOrgs)
                     } catch (err) {
@@ -366,6 +378,8 @@ function Organizations() {
                 }}
                 initialData={editData}
                 departments={departments}
+                colleges={colleges}
+                allOrgs={orgs}
                 onSubmit={async (data) => {
                     try {
                         const formData = new FormData()
@@ -375,14 +389,14 @@ function Organizations() {
                             }
                         }
 
-                        const res = await fetch(`http://localhost:5000/organizations/${editData._id}`, {
+                        const res = await apiFetch(`http://localhost:5000/organizations/${editData._id}`, {
                             method: 'PUT',
                             body: formData
                         })
                         if (!res.ok) throw new Error('Failed to update organization')
                         
                         // refresh
-                        const refreshRes = await fetch('http://localhost:5000/organizations')
+                        const refreshRes = await apiFetch('http://localhost:5000/organizations')
                         const updatedOrgs = await refreshRes.json()
                         setOrgs(updatedOrgs)
                     } catch (err) {
@@ -392,15 +406,12 @@ function Organizations() {
                 }}
                 onDelete={async (id) => {
                     try {
-                        const res = await fetch(`http://localhost:5000/organizations/${id}`, {
+                        const res = await apiFetch(`http://localhost:5000/organizations/${id}`, {
                             method: 'DELETE',
                         })
                         if (!res.ok) throw new Error('Failed to delete organization')
-                        
-                        // refresh
-                        const refreshRes = await fetch('http://localhost:5000/organizations')
-                        const updatedOrgs = await refreshRes.json()
-                        setOrgs(updatedOrgs)
+                        // Update state locally
+                        setOrgs(prev => prev.filter(org => org._id !== id))
                         setIsEditOpen(false)
                         setEditData(null)
                     } catch (err) {

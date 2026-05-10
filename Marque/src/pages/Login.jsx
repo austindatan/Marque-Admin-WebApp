@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 function Login({ onLogin }) {
     const [formData, setFormData] = useState({
-        email: '',
+        username: '',
         password: ''
     })
     const [error, setError] = useState('')
@@ -23,7 +23,7 @@ function Login({ onLogin }) {
             const data = await res.json()
 
             if (res.ok && data.message === "Login successful") {
-                if (onLogin) onLogin(data.user)
+                if (onLogin) onLogin({ ...data.user, token: data.token })
             } else {
                 setError(data.message || 'Invalid credentials. Please try again.')
             }
@@ -64,12 +64,12 @@ function Login({ onLogin }) {
                         <div>
                             <input
                                 type="text"
-                                id="email"
-                                name="email"
-                                value={formData.email}
+                                id="username"
+                                name="username"
+                                value={formData.username}
                                 onChange={handleChange}
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
-                                placeholder="ID Number"
+                                placeholder="Username"
                                 required
                             />
                         </div>

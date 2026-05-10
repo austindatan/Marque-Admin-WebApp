@@ -40,8 +40,6 @@ const uploadStream = (buffer) => {
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use("/attendance", attendanceRoutes);
-app.use("/api/students", studentRoutes);
 
 // ===== MONGODB CONNECTION =====
 mongoose.connect(process.env.MONGODB_URI)
@@ -49,22 +47,44 @@ mongoose.connect(process.env.MONGODB_URI)
   .catch(err => console.log(err));
 
 // ===== LOGIN ROUTE =====
+const jwt = require("jsonwebtoken");
+
 app.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { username, password } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ username });
     if (!user) return res.status(400).json({ message: "User not found" });
+
+    // Restrict access to Admins only
+    if (user.role !== "Admin") {
+      return res.status(403).json({ message: "Access denied. Only administrators can log into this portal." });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
-    res.json({ message: "Login successful", user });
+    // Generate JWT token matching the mobile app structure
+    const token = jwt.sign(
+      { id: user._id, role: "admin" }, // Defaulting to admin role for this portal
+      process.env.JWT_SECRET || "defaultsecret",
+      { expiresIn: "1h" }
+    );
+
+    res.json({ message: "Login successful", user, token });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 });
+
+// Protect all routes below with JWT auth
+const authMiddleware = require("./middleware/auth");
+app.use(authMiddleware);
+
+// Mount router modules
+app.use("/attendance", attendanceRoutes);
+app.use("/api/students", studentRoutes);
 
 // ===== DASHBOARD STATS ROUTE =====
 app.get("/dashboard-stats", async (req, res) => {
@@ -98,14 +118,19 @@ app.get("/recent-events", async (req, res) => {
     // Get all events, sorted by newest first
     const recentEvents = await Event.find()
       .sort({ event_date: -1 })
-      .select("event_name status event_date venue");
+      .select("event_name status event_date venue event_image organization_id")
+      .populate({ path: 'organization_id', select: 'org_name pfp' });
 
     // Map into the structure for frontend
     const activity = recentEvents.map(e => ({
+      _id: e._id,
       name: e.event_name,
       venue: e.venue,
       status: e.status,
-      time: e.event_date  // frontend can format this
+      time: e.event_date,
+      event_image: e.event_image,
+      organization: e.organization_id?.org_name || 'Unknown Organization',
+      org_logo: e.organization_id?.pfp
     }));
 
     res.json(activity);
@@ -118,7 +143,18 @@ app.get("/recent-events", async (req, res) => {
 // ===== ALL EVENTS ROUTE =====
 app.get("/events", async (req, res) => {
   try {
-    const events = await Event.find().sort({ event_date: -1 });
+    const events = await Event.find().sort({ event_date: -1 }).populate({
+      path: 'organization_id',
+      select: 'org_name pfp org_type department_id',
+      populate: {
+        path: 'department_id',
+        select: 'department_name college_id',
+        populate: {
+          path: 'college_id',
+          select: 'college_name'
+        }
+      }
+    });
 
     // Resolve Cloudinary image URLs
     const eventsWithImages = events.map(e => {
@@ -139,6 +175,31 @@ app.get("/events", async (req, res) => {
     });
 
     res.json(eventsWithImages);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ===== DELETE EVENT ROUTE =====
+app.delete("/events/:id", async (req, res) => {
+  try {
+    const deletedEvent = await Event.findByIdAndDelete(req.params.id);
+    if (!deletedEvent) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    // Optionally, delete related attendance records
+    try {
+        const AttendanceLog = require('./models/Attendance_log');
+        if (AttendanceLog) {
+            await AttendanceLog.deleteMany({ event_id: req.params.id });
+        }
+    } catch (e) {
+        console.error("Failed to delete attendance logs for event:", e);
+    }
+
+    res.json({ message: "Event deleted successfully", deletedEvent });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -303,6 +364,22 @@ app.get("/colleges", async (req, res) => {
 });
 
 // ===== DEPARTMENTS ROUTE (for filter dropdown, optional college filter) =====
+app.post("/departments", async (req, res) => {
+  try {
+    const { department_name, department_code, college_id } = req.body;
+    // ensure no duplicate before creating
+    let dept = await Department.findOne({ department_name, college_id });
+    if (!dept) {
+      dept = new Department({ department_name, department_code, college_id });
+      await dept.save();
+    }
+    res.status(201).json(dept);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 app.get("/departments", async (req, res) => {
   try {
     const query = req.query.college_id ? { college_id: req.query.college_id } : {};

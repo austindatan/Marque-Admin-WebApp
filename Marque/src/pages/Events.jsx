@@ -1,9 +1,11 @@
+import { apiFetch } from '../utils/apiFetch';
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+
 
 const FILTERS = ['All', 'Upcoming', 'Ongoing', 'Concluded', 'Cancelled']
 
@@ -24,6 +26,16 @@ const GRADIENTS = [
 ]
 const EMOJIS = ['🏆', '💻', '🤖', '🎓', '🎮', '⚽', '🎉', '📚', '🎨', '🌟']
 
+function getOptimizedImageUrl(url) {
+    if (!url) return url;
+    if (typeof url === 'string' && url.includes('res.cloudinary.com') && url.includes('/upload/')) {
+        if (!url.includes('/w_') && !url.includes('/c_')) {
+            return url.replace('/upload/', '/upload/w_500,c_limit,q_auto,f_auto/');
+        }
+    }
+    return url;
+}
+
 function Events() {
     const navigate = useNavigate()
     const [search, setSearch] = useState('')
@@ -33,7 +45,7 @@ function Events() {
     const [error, setError] = useState(null)
 
     useEffect(() => {
-        fetch('http://localhost:5000/events')
+        apiFetch('http://localhost:5000/events')
             .then(res => {
                 if (!res.ok) throw new Error('Failed to fetch events')
                 return res.json()
@@ -148,16 +160,15 @@ function Events() {
                                     <div className="h-36 relative overflow-hidden">
                                         {event.event_image ? (
                                             <img
-                                                src={event.event_image}
+                                                src={getOptimizedImageUrl(event.event_image)}
                                                 alt={event.event_name}
                                                 className="w-full h-full object-cover"
                                             />
                                         ) : (
                                             <div
-                                                className="w-full h-full flex items-center justify-center"
-                                                style={{ background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})` }}
+                                                className="w-full h-full flex items-center justify-center bg-[#0A0F51]"
                                             >
-                                                <span className="text-6xl select-none">{emoji}</span>
+                                                <img src="/marque white.png" alt="Marque Logo" className="w-16 h-auto opacity-75 object-contain" />
                                             </div>
                                         )}
                                         <span className={`absolute top-3 right-3 text-xs font-bold px-2.5 py-1 rounded-full backdrop-blur-sm ${statusStyles[event.status] ?? 'bg-gray-100 text-gray-500'}`}>
@@ -171,12 +182,18 @@ function Events() {
                                                 {event.event_name}
                                             </h3>
                                             <div className="flex items-center gap-1.5 mt-1">
-                                                <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
-                                                    <span className="text-[9px] font-bold text-primary">
-                                                        {event.event_type?.slice(0, 2) ?? 'EV'}
-                                                    </span>
+                                                <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden shrink-0">
+                                                    {event.organization_id?.pfp ? (
+                                                        <img src={getOptimizedImageUrl(event.organization_id.pfp)} alt={event.organization_id.org_name} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <span className="text-[9px] font-bold text-primary">
+                                                            {event.organization_id?.org_name?.slice(0, 2)?.toUpperCase() ?? 'OR'}
+                                                        </span>
+                                                    )}
                                                 </div>
-                                                <span className="text-xs text-muted-foreground font-medium">{event.event_type ?? 'Event'}</span>
+                                                <span className="text-xs text-muted-foreground font-medium truncate" title={event.organization_id?.org_name}>
+                                                    {event.organization_id?.org_name ?? 'Unknown Organization'}
+                                                </span>
                                             </div>
                                         </div>
 

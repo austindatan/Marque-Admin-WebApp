@@ -11,13 +11,18 @@ import EventMonitoring from './pages/EventMonitoring'
 import './styles/App.css'
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    // Check if user is already logged in on initial load
+    return !!localStorage.getItem('user');
+  })
 
-  const handleLogin = () => {
+  const handleLogin = (user) => {
+    localStorage.setItem('user', JSON.stringify(user))
     setIsAuthenticated(true)
   }
 
   const handleLogout = () => {
+    localStorage.removeItem('user')
     setIsAuthenticated(false)
   }
 
