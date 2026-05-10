@@ -106,14 +106,6 @@ function EditStudentForms({ open, onOpenChange, onSubmit, onDelete, initialData 
         name: 'orgs',
     })
 
-    // Sync password with studentId
-    useEffect(() => {
-        const sid = form.watch('studentId')
-        if (sid !== undefined) {
-            form.setValue('password', sid)
-        }
-    }, [form.watch('studentId'), form.setValue])
-
     function handleSubmit(values) {
         onSubmit?.(values)
         form.reset()
