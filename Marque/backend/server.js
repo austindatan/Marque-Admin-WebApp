@@ -16,26 +16,13 @@ const Event = require("./models/Event");
 const College = require("./models/College");
 const Department = require("./models/Department");
 const OrgOfficer = require("./models/Org_officer");
+
+// Routes
 const attendanceRoutes = require("./routes/attendance");
 const studentRoutes = require("./routes/studentRoutes");
-
+const organizationRoutes = require("./routes/organizationRoutes");
 
 const app = express();
-const multer = require("multer");
-const upload = multer({ storage: multer.memoryStorage() });
-
-const uploadStream = (buffer) => {
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      { folder: "organizations" },
-      (error, result) => {
-        if (error) return reject(error);
-        resolve(result);
-      }
-    );
-    stream.end(buffer);
-  });
-};
 
 // Middleware
 app.use(cors());
@@ -64,9 +51,8 @@ app.post("/login", async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
-    // Generate JWT token matching the mobile app structure
     const token = jwt.sign(
-      { id: user._id, role: "admin" }, // Defaulting to admin role for this portal
+      { id: user._id, role: "admin" },
       process.env.JWT_SECRET || "defaultsecret",
       { expiresIn: "1h" }
     );
@@ -78,13 +64,14 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// Protect all routes below with JWT auth
+// ===== AUTH MIDDLEWARE =====
 const authMiddleware = require("./middleware/auth");
 app.use(authMiddleware);
 
-// Mount router modules
+// ===== MOUNT ROUTES =====
 app.use("/attendance", attendanceRoutes);
 app.use("/api/students", studentRoutes);
+app.use("/organizations", organizationRoutes);
 
 // ===== DASHBOARD STATS ROUTE =====
 app.get("/dashboard-stats", async (req, res) => {
@@ -95,7 +82,6 @@ app.get("/dashboard-stats", async (req, res) => {
     const concludedEvents = await Event.countDocuments({ status: "Concluded" });
     const upcomingEvents = await Event.countDocuments({ status: "Upcoming" });
 
-    // Pending Approvals based only on Events
     const pendingApprovals = await Event.countDocuments({ status: "Pending" });
 
     res.json({
@@ -104,7 +90,7 @@ app.get("/dashboard-stats", async (req, res) => {
       totalEvents,
       upcomingEvents,
       pendingApprovals,
-      concludedEvents     // ✅ new stat
+      concludedEvents
     });
   } catch (err) {
     console.error(err);
@@ -112,16 +98,14 @@ app.get("/dashboard-stats", async (req, res) => {
   }
 });
 
-// ===== RECENT EVENTS ROUTE (ALL EVENTS) =====
+// ===== RECENT EVENTS ROUTE =====
 app.get("/recent-events", async (req, res) => {
   try {
-    // Get all events, sorted by newest first
     const recentEvents = await Event.find()
       .sort({ event_date: -1 })
       .select("event_name status event_date venue event_image organization_id")
       .populate({ path: 'organization_id', select: 'org_name pfp' });
 
-    // Map into the structure for frontend
     const activity = recentEvents.map(e => ({
       _id: e._id,
       name: e.event_name,
@@ -156,11 +140,9 @@ app.get("/events", async (req, res) => {
       }
     });
 
-    // Resolve Cloudinary image URLs
     const eventsWithImages = events.map(e => {
       const obj = e.toObject();
       if (obj.event_image) {
-        // If already a full URL, keep it; otherwise build Cloudinary URL
         if (!obj.event_image.startsWith('http')) {
           obj.event_image = cloudinary.url(obj.event_image, {
             secure: true,
@@ -189,14 +171,13 @@ app.delete("/events/:id", async (req, res) => {
       return res.status(404).json({ message: "Event not found" });
     }
 
-    // Optionally, delete related attendance records
     try {
-        const AttendanceLog = require('./models/Attendance_log');
-        if (AttendanceLog) {
-            await AttendanceLog.deleteMany({ event_id: req.params.id });
-        }
+      const AttendanceLog = require('./models/Attendance_log');
+      if (AttendanceLog) {
+        await AttendanceLog.deleteMany({ event_id: req.params.id });
+      }
     } catch (e) {
-        console.error("Failed to delete attendance logs for event:", e);
+      console.error("Failed to delete attendance logs for event:", e);
     }
 
     res.json({ message: "Event deleted successfully", deletedEvent });
@@ -206,126 +187,19 @@ app.delete("/events/:id", async (req, res) => {
   }
 });
 
-// ===== ALL ORGANIZATIONS ROUTE =====
-app.get("/organizations", async (req, res) => {
-  try {
-    const orgs = await Organization.find()
-      .populate({
-        path: "department_id",
-        select: "department_name department_code college_id",
-        populate: { path: "college_id", select: "college_name college_code" }
-      })
-      .sort({ org_name: 1 })
-      .lean();
-    res.json(orgs);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-// ===== ADD ORGANIZATION ROUTE =====
-app.post("/organizations", upload.single("logo"), async (req, res) => {
-  try {
-    const { name, type, department, description, moderator, facebookLink, instagramLink, xLink } = req.body;
-
-    if (!name || !type || !department || !description) {
-      return res.status(400).json({ message: "Missing required fields" });
-    }
-
-    let uploadedLogoUrl = "";
-    if (req.file) {
-      const uploadRes = await uploadStream(req.file.buffer);
-      uploadedLogoUrl = uploadRes.secure_url;
-    }
-
-    const newOrg = new Organization({
-      org_name: name,
-      org_type: type,
-      department_id: department,
-      description: description,
-      moderator_name: moderator || "",
-      fb_link: facebookLink || "",
-      ig_link: instagramLink || "",
-      x_link: xLink || "",
-      pfp: uploadedLogoUrl,
-    });
-
-    await newOrg.save();
-    res.status(201).json(newOrg);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-// ===== EDIT ORGANIZATION ROUTE =====
-app.put("/organizations/:id", upload.single("logo"), async (req, res) => {
-  try {
-    const { name, type, department, description, moderator, facebookLink, instagramLink, xLink } = req.body;
-
-    const updateData = {
-      org_name: name,
-      org_type: type,
-      department_id: department,
-      description: description,
-      moderator_name: moderator || "",
-      fb_link: facebookLink || "",
-      ig_link: instagramLink || "",
-      x_link: xLink || "",
-    };
-
-    if (req.file) {
-      const uploadRes = await uploadStream(req.file.buffer);
-      updateData.pfp = uploadRes.secure_url;
-    }
-
-    const updatedOrg = await Organization.findByIdAndUpdate(req.params.id, updateData, { returnDocument: 'after' });
-    if (!updatedOrg) {
-      return res.status(404).json({ message: "Organization not found" });
-    }
-    res.json(updatedOrg);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-// ===== DELETE ORGANIZATION ROUTE =====
-app.delete("/organizations/:id", async (req, res) => {
-  try {
-    const deletedOrg = await Organization.findByIdAndDelete(req.params.id);
-    if (!deletedOrg) {
-      return res.status(404).json({ message: "Organization not found" });
-    }
-
-    // optionally, you could also remove OrgOfficers associated with this org
-    const OrgOfficer = require('./models/Org_officer');
-    await OrgOfficer.deleteMany({ org_id: req.params.id });
-
-    res.json({ message: "Organization deleted successfully", deletedOrg });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
 // ===== ALL STUDENTS ROUTE =====
 app.get("/students", async (req, res) => {
   try {
-    // Fetch all students with populated references
     const students = await Student.find()
       .populate("users_id", "username firstname middlename lastname email contact_number profile_image")
       .populate("college_id", "college_name college_code")
       .populate("department_id", "department_name department_code")
       .lean();
 
-    // Get ALL org-officer records, populate org name + pfp
     const officers = await OrgOfficer.find()
       .populate("org_id", "org_name pfp")
       .lean();
 
-    // Build a map: student_id -> [ { org_id, org_name, pfp, role }, ... ]
     const orgMap = {};
     officers.forEach(o => {
       const sid = o.student_id.toString();
@@ -338,7 +212,6 @@ app.get("/students", async (req, res) => {
       });
     });
 
-    // Merge org list into each student
     const result = students.map(s => ({
       ...s,
       orgs: orgMap[s._id.toString()] || [],
@@ -352,7 +225,7 @@ app.get("/students", async (req, res) => {
   }
 });
 
-// ===== COLLEGES ROUTE (for filter dropdown) =====
+// ===== COLLEGES ROUTE =====
 app.get("/colleges", async (req, res) => {
   try {
     const colleges = await College.find().sort({ college_name: 1 }).lean();
@@ -363,11 +236,10 @@ app.get("/colleges", async (req, res) => {
   }
 });
 
-// ===== DEPARTMENTS ROUTE (for filter dropdown, optional college filter) =====
+// ===== DEPARTMENTS ROUTES =====
 app.post("/departments", async (req, res) => {
   try {
     const { department_name, department_code, college_id } = req.body;
-    // ensure no duplicate before creating
     let dept = await Department.findOne({ department_name, college_id });
     if (!dept) {
       dept = new Department({ department_name, department_code, college_id });
