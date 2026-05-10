@@ -33,7 +33,7 @@ const organizationSchema = z.object({
     name: z.string({ required_error: 'Organization Name is required.' }).min(1, 'Organization Name is required.'),
     type: z.string({ required_error: 'Type is required.' }).min(1, 'Type is required.'),
     department: z.string({ required_error: 'Department is required.' }).min(1, 'Department is required.'),
-    moderator: z.string({ required_error: 'Moderator Name is required.' }).min(1, 'Moderator Name is required.'),
+    moderator: z.string().optional(),
     description: z.string({ required_error: 'Description is required.' }).min(1, 'Description is required.'),
     facebookLink: z.string().optional(),
     instagramLink: z.string().optional(),
@@ -43,18 +43,12 @@ const organizationSchema = z.object({
 const TYPE_OPTIONS = [
     'Mother Organization',
     'Unit Organization',
-]
-
-const DEPARTMENT_OPTIONS = [
-    'Department of Information Technology',
-    'Department of Technology Communication Management',
-    'Department of Data Science',
-    'Department of Computer Science',
+    'FAESO Organization',
 ]
 
 const Req = () => <span className="text-red-500 ml-0.5">*</span>
 
-function OrganizationForms({ open, onOpenChange, onSubmit }) {
+function OrganizationForms({ open, onOpenChange, onSubmit, departments = [] }) {
     const fileInputRef = useRef(null)
     const [logoPreview, setLogoPreview] = useState(null)
 
@@ -215,8 +209,8 @@ function OrganizationForms({ open, onOpenChange, onSubmit }) {
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                {DEPARTMENT_OPTIONS.map(d => (
-                                                    <SelectItem key={d} value={d}>{d}</SelectItem>
+                                                {departments.map(d => (
+                                                    <SelectItem key={d._id} value={d._id}>{d.department_name}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
@@ -229,9 +223,9 @@ function OrganizationForms({ open, onOpenChange, onSubmit }) {
                                 name="moderator"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Moderator Name<Req /></FormLabel>
+                                        <FormLabel>Moderator Name <span className="text-muted-foreground font-normal lowercase tracking-normal">(Optional)</span></FormLabel>
                                         <FormControl>
-                                            <Input placeholder="e.g. Dr. Maria Santos" {...field} />
+                                            <Input placeholder="e.g. Dr. Maria Santos (Optional)" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
