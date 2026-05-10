@@ -331,7 +331,31 @@ function Organizations() {
             <OrganizationForms
                 open={isAddOpen}
                 onOpenChange={setIsAddOpen}
-                onSubmit={(data) => { console.log('New organization data:', data) }}
+                departments={departments}
+                onSubmit={async (data) => {
+                    try {
+                        const formData = new FormData()
+                        for (const key in data) {
+                            if (data[key] !== null && data[key] !== undefined) {
+                                formData.append(key, data[key])
+                            }
+                        }
+                        
+                        const res = await fetch('http://localhost:5000/organizations', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        if (!res.ok) throw new Error('Failed to add organization')
+                        
+                        // refresh
+                        const refreshRes = await fetch('http://localhost:5000/organizations')
+                        const updatedOrgs = await refreshRes.json()
+                        setOrgs(updatedOrgs)
+                    } catch (err) {
+                        console.error(err)
+                        alert('Error adding organization')
+                    }
+                }}
             />
 
             <EditOrganizationForms
@@ -341,7 +365,49 @@ function Organizations() {
                     if (!open) setEditData(null)
                 }}
                 initialData={editData}
-                onSubmit={(data) => { console.log('Update organization data:', { id: editData._id, ...data }) }}
+                departments={departments}
+                onSubmit={async (data) => {
+                    try {
+                        const formData = new FormData()
+                        for (const key in data) {
+                            if (data[key] !== null && data[key] !== undefined) {
+                                formData.append(key, data[key])
+                            }
+                        }
+
+                        const res = await fetch(`http://localhost:5000/organizations/${editData._id}`, {
+                            method: 'PUT',
+                            body: formData
+                        })
+                        if (!res.ok) throw new Error('Failed to update organization')
+                        
+                        // refresh
+                        const refreshRes = await fetch('http://localhost:5000/organizations')
+                        const updatedOrgs = await refreshRes.json()
+                        setOrgs(updatedOrgs)
+                    } catch (err) {
+                        console.error(err)
+                        alert('Error updating organization')
+                    }
+                }}
+                onDelete={async (id) => {
+                    try {
+                        const res = await fetch(`http://localhost:5000/organizations/${id}`, {
+                            method: 'DELETE',
+                        })
+                        if (!res.ok) throw new Error('Failed to delete organization')
+                        
+                        // refresh
+                        const refreshRes = await fetch('http://localhost:5000/organizations')
+                        const updatedOrgs = await refreshRes.json()
+                        setOrgs(updatedOrgs)
+                        setIsEditOpen(false)
+                        setEditData(null)
+                    } catch (err) {
+                        console.error(err)
+                        alert('Error deleting organization')
+                    }
+                }}
             />
 
             <ViewOrganizationForms

@@ -15,7 +15,7 @@ const OrganizationSchema = new mongoose.Schema(
         fb_link: { type: String },
         ig_link: { type: String },
         x_link: { type: String },
-        moderator_name: { type: String, required: true },
+        moderator_name: { type: String, default: "" },
     },
 );
 
