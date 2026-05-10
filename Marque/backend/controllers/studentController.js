@@ -53,7 +53,7 @@ exports.addStudent = async (req, res) => {
             middlename: middleName || '',
             lastname: lastName,
             contact_number: contactNumber || '',
-            email: email || `${studentId}@school.edu.ph`,
+            email: email || `${studentId}@ustp.edu.ph`,
             role: 'Student',
             profile_image: ''
         });
@@ -136,7 +136,7 @@ exports.updateStudent = async (req, res) => {
         user.middlename = middleName !== undefined ? middleName : user.middlename;
         user.lastname = lastName || user.lastname;
         user.username = username || user.username || student.student_number;
-        user.email = email || user.email || `${student.student_number}@school.edu.ph`;
+        user.email = email || user.email || `${student.student_number}@ustp.edu.ph`;
         user.contact_number = contactNumber || user.contact_number || '';
 
         if (password && password.trim() !== '') {
