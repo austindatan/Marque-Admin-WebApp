@@ -14,4 +14,7 @@ router.get('/departments', studentController.getDepartments);
 router.get('/organizations', studentController.getOrganizations);
 router.get('/roles', studentController.getRoles);
 
+// Delete student
+router.delete('/:id', studentController.deleteStudent);
+
 module.exports = router;

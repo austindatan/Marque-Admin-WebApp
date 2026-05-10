@@ -50,7 +50,9 @@ router.get('/monitoring/:eventId', async (req, res) => {
             .sort({ time_in: -1 });
 
         const formattedLogs = await Promise.all(logs.map(async (log) => {
-            const student = await Student.findOne({ users_id: log.user_id?._id });
+            const student = await Student.findOne({ users_id: log.user_id?._id })
+                .populate('college_id', 'college_name')
+                .populate('department_id', 'department_name');
             
             return {
                 _id: log._id,
@@ -58,6 +60,9 @@ router.get('/monitoring/:eventId', async (req, res) => {
                 name: log.user_id 
                     ? `${log.user_id.firstname} ${log.user_id.lastname}` 
                     : 'Unknown Student',
+                email: log.user_id?.email || 'N/A',
+                college: student?.college_id?.college_name || 'N/A',
+                department: student?.department_id?.department_name || 'N/A',
                 time_in: log.time_in,
                 status: log.status
             };

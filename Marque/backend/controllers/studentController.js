@@ -219,3 +219,27 @@ exports.getRoles = async (req, res) => {
         res.status(500).json({ message: 'Error retrieving roles' });
     }
 };
+
+exports.deleteStudent = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const student = await Student.findById(id);
+        if (!student) return res.status(404).json({ message: 'Student not found' });
+
+        // Delete associated User
+        if (student.users_id) {
+            await User.findByIdAndDelete(student.users_id);
+        }
+
+        // Delete associated OrgOfficers
+        await OrgOfficer.deleteMany({ student_id: student._id });
+
+        // Delete Student
+        await Student.findByIdAndDelete(id);
+
+        res.status(200).json({ message: 'Student deleted successfully' });
+    } catch (err) {
+        console.error('Error in deleteStudent:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
+    }
+};

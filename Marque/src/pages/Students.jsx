@@ -1,3 +1,4 @@
+import { apiFetch } from '../utils/apiFetch';
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -16,6 +17,7 @@ import {
 import StudentForms from '@/pages/forms/StudentForms'
 import EditStudentForms from '@/pages/forms/EditStudentForms'
 import ViewStudentForms from '@/pages/forms/ViewStudentForms'
+
 
 const avatarColors = [
     ['#dbeafe', '#1d4ed8'],
@@ -152,7 +154,7 @@ function Students() {
 
     const fetchStudents = () => {
         setLoading(true)
-        fetch('http://localhost:5000/students')
+        apiFetch('http://localhost:5000/students')
             .then(r => { if (!r.ok) throw new Error(); return r.json() })
             .then(data => { setStudents(data); setLoading(false) })
             .catch(() => { setError('Could not load students. Is the backend running?'); setLoading(false) })
@@ -163,7 +165,7 @@ function Students() {
     }, [])
 
     useEffect(() => {
-        fetch('http://localhost:5000/colleges')
+        apiFetch('http://localhost:5000/colleges')
             .then(r => r.json())
             .then(setColleges)
             .catch(() => { })
@@ -174,7 +176,7 @@ function Students() {
         const url = collegeFilter
             ? `http://localhost:5000/departments?college_id=${collegeFilter}`
             : 'http://localhost:5000/departments'
-        fetch(url)
+        apiFetch(url)
             .then(r => r.json())
             .then(setDepartments)
             .catch(() => { })
@@ -207,7 +209,7 @@ function Students() {
 
     function handleAddStudent() {
         // Refresh the students list after successful addition
-        fetch('http://localhost:5000/students')
+        apiFetch('http://localhost:5000/students')
             .then(r => { if (!r.ok) throw new Error(); return r.json() })
             .then(data => setStudents(data))
             .catch(err => console.error('Failed to refresh students:', err));
@@ -464,7 +466,7 @@ function Students() {
                 initialData={editData}
                 onSubmit={async (data) => {
                     try {
-                        const res = await fetch(`http://localhost:5000/api/students/${editData._id}`, {
+                        const res = await apiFetch(`http://localhost:5000/api/students/${editData._id}`, {
                             method: 'PATCH',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(data)
@@ -472,12 +474,35 @@ function Students() {
                         if (res.ok) {
                             fetchStudents()
                         } else {
-                            const err = await res.json()
-                            alert('Failed to update student: ' + err.message)
+                            let errMessage = 'Server error';
+                            try {
+                                const err = await res.json();
+                                errMessage = err.message || errMessage;
+                            } catch (e) {
+                                // If the backend returns HTML or non-JSON (like 404), this catches the error
+                            }
+                            alert('Failed to update student: ' + errMessage)
                         }
                     } catch (error) {
                         console.error(error)
                         alert('An error occurred while updating the student.')
+                    }
+                }}
+                onDelete={async (idToDelete) => {
+                    if (!idToDelete) return;
+                    try {
+                        const res = await apiFetch(`http://localhost:5000/api/students/${idToDelete}`, {
+                            method: 'DELETE',
+                        });
+                        if (!res.ok) throw new Error('Failed to delete student');
+
+                        // Update state locally without re-fetching the whole table
+                        setStudents(prev => prev.filter(s => s._id !== idToDelete));
+                        setIsEditOpen(false);
+                        setEditData(null);
+                    } catch (err) {
+                        console.error(err);
+                        alert('Error deleting student');
                     }
                 }}
             />

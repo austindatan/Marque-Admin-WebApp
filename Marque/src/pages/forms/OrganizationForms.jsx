@@ -1,3 +1,4 @@
+import { apiFetch } from '../../utils/apiFetch';
 import { useEffect, useState, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -21,6 +22,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
+
     Select,
     SelectContent,
     SelectItem,
@@ -32,7 +34,8 @@ const organizationSchema = z.object({
     logo: z.any().optional(),
     name: z.string({ required_error: 'Organization Name is required.' }).min(1, 'Organization Name is required.'),
     type: z.string({ required_error: 'Type is required.' }).min(1, 'Type is required.'),
-    department: z.string({ required_error: 'Department is required.' }).min(1, 'Department is required.'),
+    college: z.string().optional(),
+    department: z.string().optional(),
     moderator: z.string().optional(),
     description: z.string({ required_error: 'Description is required.' }).min(1, 'Description is required.'),
     facebookLink: z.string().optional(),
@@ -48,7 +51,16 @@ const TYPE_OPTIONS = [
 
 const Req = () => <span className="text-red-500 ml-0.5">*</span>
 
-function OrganizationForms({ open, onOpenChange, onSubmit, departments = [] }) {
+const isExcludedDepartment = (deptName) => {
+    if (!deptName) return true;
+    const lower = deptName.toLowerCase();
+    return lower.includes('extracurricular') || 
+           lower.includes('university student government') || 
+           lower.includes('university student governemnt') || 
+           lower.includes('student council');
+};
+
+function OrganizationForms({ open, onOpenChange, onSubmit, departments = [], colleges = [], allOrgs = [] }) {
     const fileInputRef = useRef(null)
     const [logoPreview, setLogoPreview] = useState(null)
 
@@ -58,6 +70,7 @@ function OrganizationForms({ open, onOpenChange, onSubmit, departments = [] }) {
             logo: null,
             name: '',
             type: '',
+            college: '',
             department: '',
             moderator: '',
             description: '',
@@ -67,6 +80,24 @@ function OrganizationForms({ open, onOpenChange, onSubmit, departments = [] }) {
         },
     })
 
+    const orgType = form.watch('type');
+    const selectedCollegeId = form.watch('college');
+
+    // Reset fields when orgType changes
+    useEffect(() => {
+        if (open) {
+            form.setValue('college', '');
+            form.setValue('department', '');
+        }
+    }, [orgType, form, open]);
+
+    // Reset department when college changes
+    useEffect(() => {
+        if (open) {
+            form.setValue('department', '');
+        }
+    }, [selectedCollegeId, form, open]);
+
     useEffect(() => {
         if (!open) {
             form.reset()
@@ -75,7 +106,47 @@ function OrganizationForms({ open, onOpenChange, onSubmit, departments = [] }) {
         }
     }, [open, form])
 
-    function handleSubmit(values) {
+    async function handlePreSubmit(values) {
+        if (values.type === 'Mother Organization') {
+            if (!values.college) {
+                form.setError('college', { message: 'College is required for Mother Organization' });
+                return;
+            }
+            try {
+                const selectedCol = colleges.find(c => c._id === values.college);
+                const deptRes = await apiFetch('http://localhost:5000/departments', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        department_code: `S${selectedCol.college_code}`,
+                        department_name: `Student Council of ${selectedCol.college_name}`,
+                        college_id: selectedCol._id
+                    })
+                });
+                if (!deptRes.ok) throw new Error("Failed to create department");
+                const newDept = await deptRes.json();
+                values.department = newDept._id;
+            } catch (err) {
+                console.error(err);
+                alert("Error setting up Mother Organization department.");
+                return;
+            }
+        } else if (values.type === 'Unit Organization') {
+            if (!values.college) {
+                form.setError('college', { message: 'College is required for Unit Organization' });
+                return;
+            }
+            if (!values.department) {
+                form.setError('department', { message: 'Department is required for Unit Organization' });
+                return;
+            }
+        } else if (values.type === 'FAESO Organization') {
+            if (!values.department) {
+                form.setError('department', { message: 'Department is required for FAESO Organization' });
+                return;
+            }
+        }
+
         onSubmit?.(values)
         form.reset()
         setLogoPreview(null)
@@ -98,6 +169,25 @@ function OrganizationForms({ open, onOpenChange, onSubmit, departments = [] }) {
         }
     }
 
+    const collegesWithMotherOrg = new Set(
+        allOrgs.filter(o => o.org_type === 'Mother Organization' && o.department_id?.college_id)
+               .map(o => o.department_id.college_id._id || o.department_id.college_id)
+    );
+
+    const availableColleges = orgType === 'Mother Organization' 
+        ? colleges.filter(c => !collegesWithMotherOrg.has(c._id))
+        : colleges;
+
+    let availableDepartments = [];
+    if (orgType === 'FAESO Organization') {
+        availableDepartments = departments.filter(d => d.department_name.toLowerCase().includes('extracurricular'));
+    } else if (orgType === 'Unit Organization' && selectedCollegeId) {
+        availableDepartments = departments.filter(d => 
+            (d.college_id?._id || d.college_id) === selectedCollegeId && 
+            !isExcludedDepartment(d.department_name)
+        );
+    }
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
@@ -110,7 +200,7 @@ function OrganizationForms({ open, onOpenChange, onSubmit, departments = [] }) {
 
                 <Form {...form}>
                     <form
-                        onSubmit={form.handleSubmit(handleSubmit)}
+                        onSubmit={form.handleSubmit(handlePreSubmit)}
                         className="space-y-5 pt-2"
                     >
                         {/* ── Logo Upload ── */}
@@ -194,30 +284,63 @@ function OrganizationForms({ open, onOpenChange, onSubmit, departments = [] }) {
                             />
                         </div>
 
-                        {/* ── Department & Moderator ── */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="department"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Department<Req /></FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select Department" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                {departments.map(d => (
-                                                    <SelectItem key={d._id} value={d._id}>{d.department_name}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
+                        {/* ── College & Department Cascading ── */}
+                        {orgType && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-muted/30 p-3 rounded-lg border border-border/50">
+                                {(orgType === 'Unit Organization' || orgType === 'Mother Organization') && (
+                                    <FormField
+                                        control={form.control}
+                                        name="college"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>College<Req /></FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger className="bg-background">
+                                                            <SelectValue placeholder="Select College" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {availableColleges.map(c => (
+                                                            <SelectItem key={c._id} value={c._id}>{c.college_name}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
                                 )}
-                            />
+                                
+                                {(orgType === 'FAESO Organization' || (orgType === 'Unit Organization' && selectedCollegeId)) && (
+                                    <FormField
+                                        control={form.control}
+                                        name="department"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Department<Req /></FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger className="bg-background">
+                                                            <SelectValue placeholder="Select Department" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {availableDepartments.map(d => (
+                                                            <SelectItem key={d._id} value={d._id}>{d.department_name}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                )}
+                            </div>
+                        )}
+
+                        {/* ── Moderator ── */}
+                        <div className="grid grid-cols-1 gap-4">
                             <FormField
                                 control={form.control}
                                 name="moderator"

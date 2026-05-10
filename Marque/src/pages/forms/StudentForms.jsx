@@ -1,3 +1,4 @@
+import { apiFetch } from '../../utils/apiFetch';
 import { useEffect, useState } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -21,6 +22,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
+
     Select,
     SelectContent,
     SelectItem,
@@ -51,7 +53,8 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
     const [colleges, setColleges] = useState([])
     const [departments, setDepartments] = useState([])
     const [organizations, setOrganizations] = useState([])
-    const [roles, setRoles] = useState([])
+    const [roles, setRoles] = useState(['Committee', 'Manager', 'President'])
+    const [existingPresidentsByOrg, setExistingPresidentsByOrg] = useState({})
 
     const form = useForm({
         resolver: zodResolver(studentSchema),
@@ -88,7 +91,7 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
     }, [form.watch('studentId'), form.setValue])
 
     function handleSubmit(values) {
-        fetch('http://localhost:5000/api/students/add', {
+        apiFetch('http://localhost:5000/api/students/add', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -115,7 +118,7 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
 
     // fetch colleges
     useEffect(() => {
-        fetch('http://localhost:5000/colleges')
+        apiFetch('http://localhost:5000/colleges')
             .then(r => r.json())
             .then(data => setColleges(data))
             .catch(() => setColleges([]))
@@ -127,7 +130,7 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
         const url = collegeId
             ? `http://localhost:5000/departments?college_id=${collegeId}`
             : 'http://localhost:5000/departments'
-        fetch(url)
+        apiFetch(url)
             .then(r => r.json())
             .then(data => setDepartments(data))
             .catch(() => setDepartments([]))
@@ -138,21 +141,28 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
 
     // fetch organizations
     useEffect(() => {
-        fetch('http://localhost:5000/organizations')
+        apiFetch('http://localhost:5000/organizations')
             .then(r => r.json())
             .then(data => setOrganizations(data))
             .catch(() => setOrganizations([]))
     }, [])
 
-    // fetch roles
+    // Fetch existing presidents to enforce one president per organization
     useEffect(() => {
-        fetch('http://localhost:5000/api/students/roles')
-            .then(res => {
-                if (!res.ok) throw new Error('Failed to fetch');
-                return res.json();
+        apiFetch('http://localhost:5000/students')
+            .then(r => r.json())
+            .then(data => {
+                const orgHasPresident = {};
+                data.forEach(student => {
+                    (student.orgs || []).forEach(o => {
+                        if (o.role === 'President') {
+                            orgHasPresident[o.org_id] = true;
+                        }
+                    })
+                })
+                setExistingPresidentsByOrg(orgHasPresident);
             })
-            .then(data => setRoles(data))
-            .catch(err => console.error('Failed to fetch roles:', err));
+            .catch(err => console.error('Failed to fetch students for validation:', err));
     }, []);
 
     return (
@@ -306,9 +316,13 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
                                 // Filter available roles: A student can only be President of one organization
                                 const selectedRoles = form.watch('orgs').map(o => o.role).filter((_, i) => i !== index);
                                 const hasPresident = selectedRoles.some(r => r && r.toLowerCase() === 'president');
+                                const currentOrg = form.watch(`orgs.${index}.org`);
+                                const orgAlreadyHasPresident = currentOrg ? existingPresidentsByOrg[currentOrg] : false;
+
                                 const availableRoles = (roles || []).filter(r => {
                                     if (!r) return false;
                                     if (hasPresident && r.toLowerCase() === 'president') return false;
+                                    if (r.toLowerCase() === 'president' && orgAlreadyHasPresident) return false;
                                     return true;
                                 });
 
