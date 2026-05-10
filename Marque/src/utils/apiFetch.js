@@ -3,10 +3,16 @@ export const apiFetch = async (url, options = {}) => {
   const user = userStr ? JSON.parse(userStr) : null;
   const token = user?.token;
 
+  const isFormData = options.body instanceof FormData;
+
   const headers = {
-    "Content-Type": "application/json",
     ...options.headers,
   };
+
+  // ❗ Only set JSON header if NOT FormData
+  if (!isFormData) {
+    headers["Content-Type"] = "application/json";
+  }
 
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
@@ -16,12 +22,6 @@ export const apiFetch = async (url, options = {}) => {
     ...options,
     headers,
   });
-
-  if (response.status === 401) {
-    // Optional: Handle token expiration globally here
-    // e.g., localStorage.removeItem('user');
-    // window.location.href = '/';
-  }
 
   return response;
 };
