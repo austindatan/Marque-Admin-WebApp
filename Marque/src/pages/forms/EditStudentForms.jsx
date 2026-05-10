@@ -409,7 +409,7 @@ function EditStudentForms({ open, onOpenChange, onSubmit, initialData }) {
                                             <span className="text-muted-foreground font-normal text-xs">(Optional)</span>
                                         </FormLabel>
                                         <FormControl>
-                                            <Input type="email" placeholder="juan@school.edu.ph" {...field} />
+                                            <Input type="email" placeholder="juan@ustp.edu.ph" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
