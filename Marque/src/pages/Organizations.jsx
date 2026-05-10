@@ -147,11 +147,19 @@ function Organizations() {
                     className="text-sm border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20 bg-background"
                 >
                     <option value="">All Departments</option>
-                    {departments.map(d => (
-                        <option key={d._id} value={d._id}>
-                            {d.department_code ? `${d.department_code} — ` : ''}{d.department_name}
-                        </option>
-                    ))}
+
+                    {departments
+                        .filter(d =>
+                            !d.department_name?.includes("Student Council") &&
+                            !d.department_name?.includes("University Student Government") &&
+                            !d.department_name?.includes("Extracurricular")
+                        )
+                        .map(d => (
+                            <option key={d._id} value={d._id}>
+                                {d.department_code ? `${d.department_code} — ` : ''}
+                                {d.department_name}
+                            </option>
+                        ))}
                 </select>
 
                 <div className="relative ml-auto w-64">
