@@ -62,7 +62,7 @@ export default function Dashboard() {
     const loggedUser = JSON.parse(localStorage.getItem("user"))
     if (loggedUser) setUser(loggedUser)
 
-    apiFetch("http://localhost:5000/dashboard-stats")
+    apiFetch("/dashboard-stats")
       .then(res => res.json())
       .then(data => {
         setStats(prev => prev.map(stat => {
@@ -77,7 +77,7 @@ export default function Dashboard() {
       })
       .catch(err => console.error("Failed to fetch dashboard stats:", err))
 
-    apiFetch("http://localhost:5000/recent-events")
+    apiFetch("/recent-events")
       .then(res => res.json())
       .then(data => {
         const formatted = data
