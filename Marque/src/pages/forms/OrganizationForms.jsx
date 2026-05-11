@@ -54,10 +54,10 @@ const Req = () => <span className="text-red-500 ml-0.5">*</span>
 const isExcludedDepartment = (deptName) => {
     if (!deptName) return true;
     const lower = deptName.toLowerCase();
-    return lower.includes('extracurricular') || 
-           lower.includes('university student government') || 
-           lower.includes('university student governemnt') || 
-           lower.includes('student council');
+    return lower.includes('extracurricular') ||
+        lower.includes('university student government') ||
+        lower.includes('university student governemnt') ||
+        lower.includes('student council');
 };
 
 function OrganizationForms({ open, onOpenChange, onSubmit, departments = [], colleges = [], allOrgs = [] }) {
@@ -114,7 +114,7 @@ function OrganizationForms({ open, onOpenChange, onSubmit, departments = [], col
             }
             try {
                 const selectedCol = colleges.find(c => c._id === values.college);
-                const deptRes = await apiFetch('http://localhost:5000/departments', {
+                const deptRes = await apiFetch('/departments', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -171,10 +171,10 @@ function OrganizationForms({ open, onOpenChange, onSubmit, departments = [], col
 
     const collegesWithMotherOrg = new Set(
         allOrgs.filter(o => o.org_type === 'Mother Organization' && o.department_id?.college_id)
-               .map(o => o.department_id.college_id._id || o.department_id.college_id)
+            .map(o => o.department_id.college_id._id || o.department_id.college_id)
     );
 
-    const availableColleges = orgType === 'Mother Organization' 
+    const availableColleges = orgType === 'Mother Organization'
         ? colleges.filter(c => !collegesWithMotherOrg.has(c._id))
         : colleges;
 
@@ -182,8 +182,8 @@ function OrganizationForms({ open, onOpenChange, onSubmit, departments = [], col
     if (orgType === 'FAESO Organization') {
         availableDepartments = departments.filter(d => d.department_name.toLowerCase().includes('extracurricular'));
     } else if (orgType === 'Unit Organization' && selectedCollegeId) {
-        availableDepartments = departments.filter(d => 
-            (d.college_id?._id || d.college_id) === selectedCollegeId && 
+        availableDepartments = departments.filter(d =>
+            (d.college_id?._id || d.college_id) === selectedCollegeId &&
             !isExcludedDepartment(d.department_name)
         );
     }
@@ -311,7 +311,7 @@ function OrganizationForms({ open, onOpenChange, onSubmit, departments = [], col
                                         )}
                                     />
                                 )}
-                                
+
                                 {(orgType === 'FAESO Organization' || (orgType === 'Unit Organization' && selectedCollegeId)) && (
                                     <FormField
                                         control={form.control}

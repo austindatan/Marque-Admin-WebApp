@@ -154,7 +154,7 @@ function Students() {
 
     const fetchStudents = () => {
         setLoading(true)
-        apiFetch('http://localhost:5000/students')
+        apiFetch('/students')
             .then(r => { if (!r.ok) throw new Error(); return r.json() })
             .then(data => { setStudents(data); setLoading(false) })
             .catch(() => { setError('Could not load students. Is the backend running?'); setLoading(false) })
@@ -165,7 +165,7 @@ function Students() {
     }, [])
 
     useEffect(() => {
-        apiFetch('http://localhost:5000/colleges')
+        apiFetch('/colleges')
             .then(r => r.json())
             .then(setColleges)
             .catch(() => { })
@@ -174,8 +174,8 @@ function Students() {
     useEffect(() => {
         setDepartmentFilter('')
         const url = collegeFilter
-            ? `http://localhost:5000/departments?college_id=${collegeFilter}`
-            : 'http://localhost:5000/departments'
+            ? `/departments?college_id=${collegeFilter}`
+            : '/departments'
         apiFetch(url)
             .then(r => r.json())
             .then(setDepartments)
@@ -209,7 +209,7 @@ function Students() {
 
     function handleAddStudent() {
         // Refresh the students list after successful addition
-        apiFetch('http://localhost:5000/students')
+        apiFetch('/students')
             .then(r => { if (!r.ok) throw new Error(); return r.json() })
             .then(data => setStudents(data))
             .catch(err => console.error('Failed to refresh students:', err));
@@ -475,7 +475,7 @@ function Students() {
                 initialData={editData}
                 onSubmit={async (data) => {
                     try {
-                        const res = await apiFetch(`http://localhost:5000/api/students/${editData._id}`, {
+                        const res = await apiFetch(`/api/students/${editData._id}`, {
                             method: 'PATCH',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(data)
@@ -500,7 +500,7 @@ function Students() {
                 onDelete={async (idToDelete) => {
                     if (!idToDelete) return;
                     try {
-                        const res = await apiFetch(`http://localhost:5000/api/students/${idToDelete}`, {
+                        const res = await apiFetch(`/api/students/${idToDelete}`, {
                             method: 'DELETE',
                         });
                         if (!res.ok) throw new Error('Failed to delete student');

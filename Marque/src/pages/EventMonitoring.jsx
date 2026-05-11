@@ -49,7 +49,7 @@ export default function EventMonitoring() {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-    
+
     // Filters
     const [search, setSearch] = useState('')
     const [filterCollege, setFilterCollege] = useState('All')
@@ -59,13 +59,13 @@ export default function EventMonitoring() {
     const [allDepartments, setAllDepartments] = useState([])
 
     useEffect(() => {
-        apiFetch('http://localhost:5000/colleges').then(res => res.json()).then(setAllColleges).catch(console.error)
-        apiFetch('http://localhost:5000/departments').then(res => res.json()).then(setAllDepartments).catch(console.error)
+        apiFetch('/colleges').then(res => res.json()).then(setAllColleges).catch(console.error)
+        apiFetch('/departments').then(res => res.json()).then(setAllDepartments).catch(console.error)
     }, [])
 
     // Events for Dropdown
     useEffect(() => {
-        apiFetch('http://localhost:5000/events')
+        apiFetch('/events')
             .then(res => res.json())
             .then(data => {
                 setEvents(data)
@@ -79,7 +79,7 @@ export default function EventMonitoring() {
     const fetchAttendance = async () => {
         if (!selectedEventId) return;
         try {
-            const res = await apiFetch(`http://localhost:5000/attendance/monitoring/${selectedEventId}`);
+            const res = await apiFetch(`/attendance/monitoring/${selectedEventId}`);
             const data = await res.json();
             setAttendanceList(data);
         } catch (err) {
@@ -93,11 +93,11 @@ export default function EventMonitoring() {
 
     const handleDeleteEvent = async () => {
         try {
-            const res = await apiFetch(`http://localhost:5000/events/${id}`, {
+            const res = await apiFetch(`/events/${id}`, {
                 method: 'DELETE',
             });
             if (!res.ok) throw new Error('Failed to delete event');
-            
+
             setIsDeleteDialogOpen(false);
             navigate('/events');
         } catch (err) {
@@ -119,17 +119,17 @@ export default function EventMonitoring() {
     const isExcludedDepartment = (deptName) => {
         if (!deptName) return true;
         const lower = deptName.toLowerCase();
-        return lower.includes('extracurricular') || 
-               lower.includes('university student government') || 
-               lower.includes('university student governemnt') || 
-               lower.includes('student council');
+        return lower.includes('extracurricular') ||
+            lower.includes('university student government') ||
+            lower.includes('university student governemnt') ||
+            lower.includes('student council');
     };
 
     const isExcludedCollege = (colName) => {
         if (!colName) return true;
         const lower = colName.toLowerCase();
-        return lower.includes('university student government') || 
-               lower.includes('university student governemnt');
+        return lower.includes('university student government') ||
+            lower.includes('university student governemnt');
     };
 
     let uniqueColleges = ['All', ...new Set(attendanceList.map(item => item.college).filter(c => !isExcludedCollege(c)))];
@@ -204,7 +204,7 @@ export default function EventMonitoring() {
                                     {currentEvent?.status || 'Unknown'}
                                 </span>
                             </div>
-                            
+
                             {/* Details side */}
                             <CardContent className="p-5 flex flex-col justify-center flex-1 min-w-0">
                                 <div className="flex justify-between items-start gap-4">
@@ -217,7 +217,7 @@ export default function EventMonitoring() {
                                         </svg>
                                     </Button>
                                 </div>
-                                
+
                                 <div className="flex items-center gap-1.5 mt-2">
                                     <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden shrink-0">
                                         {currentEvent?.organization_id?.pfp ? (
@@ -232,19 +232,19 @@ export default function EventMonitoring() {
                                         {currentEvent?.organization_id?.org_name ?? 'Unknown Organization'}
                                     </span>
                                 </div>
-                                
+
                                 <p className="text-sm text-muted-foreground mt-3 line-clamp-2" title={currentEvent?.description}>
                                     {currentEvent?.description || 'No description available for this event.'}
                                 </p>
-                                
+
                                 <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-muted-foreground">
                                     <div className="flex items-center gap-1.5 shrink-0">
                                         <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
                                         <span>
-                                            {currentEvent?.event_date 
-                                                ? new Date(currentEvent.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) 
+                                            {currentEvent?.event_date
+                                                ? new Date(currentEvent.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                                                 : '—'}
                                         </span>
                                     </div>
@@ -293,11 +293,11 @@ export default function EventMonitoring() {
                                             ))}
                                         </select>
                                     )}
-                                    <Input 
-                                        placeholder="Search student..." 
-                                        className="w-48 h-9" 
-                                        value={search} 
-                                        onChange={e => setSearch(e.target.value)} 
+                                    <Input
+                                        placeholder="Search student..."
+                                        className="w-48 h-9"
+                                        value={search}
+                                        onChange={e => setSearch(e.target.value)}
                                     />
                                 </div>
                             </div>

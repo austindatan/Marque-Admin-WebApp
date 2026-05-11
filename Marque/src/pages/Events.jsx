@@ -45,7 +45,7 @@ function Events() {
     const [error, setError] = useState(null)
 
     useEffect(() => {
-        apiFetch('http://localhost:5000/events')
+        apiFetch('/events')
             .then(res => {
                 if (!res.ok) throw new Error('Failed to fetch events')
                 return res.json()

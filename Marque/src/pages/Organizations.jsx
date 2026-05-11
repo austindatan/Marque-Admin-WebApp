@@ -70,21 +70,21 @@ function Organizations() {
     const [error, setError] = useState(null)
 
     useEffect(() => {
-        apiFetch('http://localhost:5000/organizations')
+        apiFetch('/organizations')
             .then(r => { if (!r.ok) throw new Error(); return r.json() })
             .then(data => { setOrgs(data); setLoading(false) })
             .catch(() => { setError('Could not load organizations. Is the backend running?'); setLoading(false) })
     }, [])
 
     useEffect(() => {
-        apiFetch('http://localhost:5000/departments')
+        apiFetch('/departments')
             .then(r => r.json())
             .then(setDepartments)
             .catch(() => { })
     }, [])
 
     useEffect(() => {
-        apiFetch('http://localhost:5000/colleges')
+        apiFetch('/colleges')
             .then(r => r.json())
             .then(setColleges)
             .catch(() => { })
@@ -299,9 +299,9 @@ function Organizations() {
 
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-2">
-                                                    <Button 
-                                                        variant="ghost" 
-                                                        size="icon" 
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
                                                         className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
                                                         onClick={() => {
                                                             setViewData(org)
@@ -313,9 +313,9 @@ function Organizations() {
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                         </svg>
                                                     </Button>
-                                                    <Button 
-                                                        variant="ghost" 
-                                                        size="icon" 
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
                                                         className="h-8 w-8 text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50"
                                                         onClick={() => {
                                                             setEditData(org)
@@ -359,15 +359,15 @@ function Organizations() {
                                 formData.append(key, data[key])
                             }
                         }
-                        
-                        const res = await apiFetch('http://localhost:5000/organizations', {
+
+                        const res = await apiFetch('/organizations', {
                             method: 'POST',
                             body: formData
                         })
                         if (!res.ok) throw new Error('Failed to add organization')
-                        
+
                         // refresh
-                        const refreshRes = await apiFetch('http://localhost:5000/organizations')
+                        const refreshRes = await apiFetch('/organizations')
                         const updatedOrgs = await refreshRes.json()
                         setOrgs(updatedOrgs)
                     } catch (err) {
@@ -396,14 +396,14 @@ function Organizations() {
                             }
                         }
 
-                        const res = await apiFetch(`http://localhost:5000/organizations/${editData._id}`, {
+                        const res = await apiFetch(`/organizations/${editData._id}`, {
                             method: 'PUT',
                             body: formData
                         })
                         if (!res.ok) throw new Error('Failed to update organization')
-                        
+
                         // refresh
-                        const refreshRes = await apiFetch('http://localhost:5000/organizations')
+                        const refreshRes = await apiFetch('/organizations')
                         const updatedOrgs = await refreshRes.json()
                         setOrgs(updatedOrgs)
                     } catch (err) {
@@ -413,7 +413,7 @@ function Organizations() {
                 }}
                 onDelete={async (id) => {
                     try {
-                        const res = await apiFetch(`http://localhost:5000/organizations/${id}`, {
+                        const res = await apiFetch(`/organizations/${id}`, {
                             method: 'DELETE',
                         })
                         if (!res.ok) throw new Error('Failed to delete organization')

@@ -91,7 +91,7 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
     }, [form.watch('studentId'), form.setValue])
 
     function handleSubmit(values) {
-        apiFetch('http://localhost:5000/api/students/add', {
+        apiFetch('/api/students/add', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -118,7 +118,7 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
 
     // fetch colleges
     useEffect(() => {
-        apiFetch('http://localhost:5000/colleges')
+        apiFetch('/colleges')
             .then(r => r.json())
             .then(data => setColleges(data))
             .catch(() => setColleges([]))
@@ -128,8 +128,8 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
     useEffect(() => {
         const collegeId = form.watch('college')
         const url = collegeId
-            ? `http://localhost:5000/departments?college_id=${collegeId}`
-            : 'http://localhost:5000/departments'
+            ? `/departments?college_id=${collegeId}`
+            : '/departments'
         apiFetch(url)
             .then(r => r.json())
             .then(data => setDepartments(data))
@@ -141,7 +141,7 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
 
     // fetch organizations
     useEffect(() => {
-        apiFetch('http://localhost:5000/organizations')
+        apiFetch('/organizations')
             .then(r => r.json())
             .then(data => setOrganizations(data))
             .catch(() => setOrganizations([]))
@@ -149,7 +149,7 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
 
     // Fetch existing presidents to enforce one president per organization
     useEffect(() => {
-        apiFetch('http://localhost:5000/students')
+        apiFetch('/students')
             .then(r => r.json())
             .then(data => {
                 const orgHasPresident = {};
@@ -294,10 +294,10 @@ function StudentForms({ open, onOpenChange, onSubmit }) {
                                 <FormLabel className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
                                     Organizations & Roles
                                 </FormLabel>
-                                <Button 
-                                    type="button" 
-                                    variant="outline" 
-                                    size="sm" 
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
                                     className="h-8 gap-1.5"
                                     onClick={() => append({ org: '', role: '' })}
                                 >
