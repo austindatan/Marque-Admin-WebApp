@@ -17,14 +17,12 @@ const College = require("./models/College");
 const Department = require("./models/Department");
 const OrgOfficer = require("./models/Org_officer");
 
-// Routes
 const attendanceRoutes = require("./routes/attendance");
 const studentRoutes = require("./routes/studentRoutes");
 const organizationRoutes = require("./routes/organizationRoutes");
 
 const app = express();
 
-// Middleware
 app.use(cors({
   origin: [
     "http://localhost:5173",
@@ -34,12 +32,10 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// ===== MONGODB CONNECTION =====
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log("MongoDB Connected"))
   .catch(err => console.log(err));
 
-// ===== LOGIN ROUTE =====
 const jwt = require("jsonwebtoken");
 
 app.post("/login", async (req, res) => {
