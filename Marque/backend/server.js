@@ -25,7 +25,13 @@ const organizationRoutes = require("./routes/organizationRoutes");
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://marque-admin-web-app.vercel.app",
+  ],
+  credentials: true,
+}));
 app.use(express.json());
 
 // ===== MONGODB CONNECTION =====

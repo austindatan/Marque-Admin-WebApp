@@ -74,7 +74,6 @@ function Events() {
             <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
                     <h1 className="text-3xl font-extrabold text-primary tracking-tight">Events</h1>
-                    <p className="text-muted-foreground mt-1 text-sm">Track and manage all student organization events.</p>
                 </div>
             </div>
 

@@ -114,7 +114,6 @@ function Organizations() {
             <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
                     <h1 className="text-3xl font-extrabold text-primary tracking-tight">Organizations</h1>
-                    <p className="text-muted-foreground mt-1 text-sm">Manage all student organizations and their details.</p>
                 </div>
                 <Button className="gap-2" onClick={() => setIsAddOpen(true)}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

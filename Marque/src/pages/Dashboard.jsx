@@ -208,7 +208,6 @@ export default function Dashboard() {
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               Ongoing Events
             </CardTitle>
-            <CardDescription>Events happening right now.</CardDescription>
           </CardHeader>
           <CardContent>
             {renderEventList(ongoingEvents, "No ongoing events at the moment.")}
@@ -218,7 +217,6 @@ export default function Dashboard() {
         <Card className="shadow-sm border-t-4 border-t-blue-500">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Upcoming Events</CardTitle>
-            <CardDescription>Recently posted upcoming events.</CardDescription>
           </CardHeader>
           <CardContent>
             {renderEventList(upcomingEvents, "No upcoming events scheduled.")}
@@ -228,7 +226,6 @@ export default function Dashboard() {
         <Card className="shadow-sm border-t-4 border-t-gray-500">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Recently Concluded</CardTitle>
-            <CardDescription>Events that have recently finished.</CardDescription>
           </CardHeader>
           <CardContent>
             {renderEventList(concludedEvents, "No concluded events found.")}
